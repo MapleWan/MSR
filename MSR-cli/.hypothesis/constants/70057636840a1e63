@@ -1,0 +1,4 @@
+# file: /Users/maplewan/keep-going/codes/5_projects/MSR-v2/MSR-cli/msr_sync/commands/init_cmd.py
+# hypothesis_version: 6.151.11
+
+['\n🔍 正在扫描已有 IDE 配置...', ', ', 'global', 'mcp', 'mcp.json', 'rules', 'servers', 'skills', 'utf-8', '✅ 统一仓库已创建: {}', '统一仓库已初始化，跳过创建']

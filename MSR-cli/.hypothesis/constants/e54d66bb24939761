@@ -1,0 +1,4 @@
+# file: /Users/maplewan/keep-going/codes/5_projects/MSR-v2/MSR-cli/msr_sync/commands/list_cmd.py
+# hypothesis_version: 6.151.11
+
+[', ', '│   ', '└── ', '├── ', '📦 统一仓库为空，暂无配置', '📦 统一仓库配置列表']

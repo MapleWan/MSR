@@ -1,0 +1,2 @@
+[console_scripts]
+msr-sync = msr_sync.cli:main

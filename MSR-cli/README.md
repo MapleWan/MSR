@@ -1,0 +1,195 @@
+# MSR-cli (`msr-sync`)
+
+统一管理多款国内 AI IDE 的 rules、skills、MCP 配置的轻量化命令行工具。
+
+## 简介
+
+MSR-cli 是一个基于 Python 开发的命令行工具，命令名为 `msr-sync`，旨在解决国内主流 AI IDE 之间配置相互独立、跨 IDE 迁移需手动复制、配置格式与路径不统一等核心痛点。
+
+通过建立统一的本地仓库（`~/.msr-repos`），MSR-cli 提供配置的导入、同步、查看、删除等完整生命周期管理能力，让你在多款 AI IDE 之间轻松共享和迁移配置。
+
+## 支持的 IDE
+
+| IDE | 厂商 | Rules | Skills | MCP |
+|-----|------|-------|--------|-----|
+| **Trae** | 字节跳动 | ✅ | ✅ | ✅ |
+| **Qoder** | 阿里巴巴 | ✅ | ✅ | ✅ |
+| **Lingma** | 阿里巴巴 | ✅ | ✅ | ✅ |
+| **CodeBuddy** | 腾讯 | ✅ | ✅ | ✅ |
+
+## 支持的平台
+
+- **macOS**
+- **Windows**
+
+工具会自动检测当前操作系统，并使用对应平台的路径规范解析所有文件路径。
+
+## 安装
+
+### 通过 pip 安装
+
+```bash
+pip install msr-sync
+```
+
+### 从源码安装
+
+```bash
+git clone <仓库地址>
+cd MSR-cli
+pip install -e .
+```
+
+### 开发环境安装（含测试依赖）
+
+```bash
+pip install -e ".[dev]"
+```
+
+**环境要求：** Python 3.9 或更高版本。
+
+## 快速开始
+
+### 1. 初始化统一仓库
+
+```bash
+msr-sync init
+```
+
+如果你已经在各 IDE 中有现有配置，可以使用 `--merge` 参数自动扫描并导入：
+
+```bash
+msr-sync init --merge
+```
+
+### 2. 导入配置
+
+将 rule 文件导入到统一仓库：
+
+```bash
+msr-sync import rules ./my-rule.md
+```
+
+将 skill 目录导入：
+
+```bash
+msr-sync import skills ./my-skill/
+```
+
+将 MCP 配置导入：
+
+```bash
+msr-sync import mcp ./my-mcp-config/
+```
+
+也支持从压缩包或 URL 导入：
+
+```bash
+msr-sync import rules ./rules-pack.zip
+msr-sync import rules https://example.com/rules.zip
+```
+
+### 3. 同步配置到 IDE
+
+将所有配置同步到所有 IDE（全局级）：
+
+```bash
+msr-sync sync
+```
+
+同步指定类型的配置到指定 IDE：
+
+```bash
+msr-sync sync --type rules --ide trae
+```
+
+项目级同步：
+
+```bash
+msr-sync sync --scope project --project-dir /path/to/project
+```
+
+### 4. 查看配置列表
+
+```bash
+msr-sync list
+```
+
+按类型过滤：
+
+```bash
+msr-sync list --type rules
+```
+
+### 5. 删除配置
+
+```bash
+msr-sync remove rules my-rule V1
+```
+
+## 统一仓库目录结构
+
+MSR-cli 使用 `~/.msr-repos` 作为统一仓库路径，目录结构如下：
+
+```
+~/.msr-repos/
+├── RULES/                          # 规则配置
+│   └── <rule-name>/
+│       ├── V1/
+│       │   └── <rule-name>.md      # 原始 Markdown 文件
+│       └── V2/
+│           └── <rule-name>.md
+├── SKILLS/                         # 技能配置
+│   └── <skill-name>/
+│       ├── V1/
+│       │   ├── SKILL.md
+│       │   └── ...                 # 其他技能文件
+│       └── V2/
+│           └── ...
+└── MCP/                            # MCP 配置
+    └── <mcp-name>/
+        ├── V1/
+        │   └── mcp.json
+        └── V2/
+            └── mcp.json
+```
+
+### 配置类型说明
+
+| 配置类型 | 存储形式 | 说明 |
+|---------|---------|------|
+| **Rules（规则）** | Markdown 文件 | AI IDE 中的规则配置，用于指导 AI 行为 |
+| **Skills（技能）** | 目录（含 SKILL.md） | AI IDE 中的技能配置，包含技能定义和相关文件 |
+| **MCP** | JSON 文件 | Model Context Protocol 配置，定义 AI IDE 可用的外部工具 |
+
+## 版本管理
+
+MSR-cli 为每个配置条目提供多版本管理能力：
+
+- **版本命名格式：** `V` + 递增正整数（V1、V2、V3……）
+- **导入时：** 若同名配置已存在，自动在最大版本号基础上加一创建新版本
+- **同步时：** 默认使用最新版本（最大版本号），可通过 `--version` 参数指定特定版本
+
+```bash
+# 同步指定版本
+msr-sync sync --name my-rule --version V1
+
+# 查看所有版本
+msr-sync list
+```
+
+## 命令概览
+
+| 命令 | 说明 |
+|------|------|
+| `msr-sync init` | 初始化统一配置仓库 |
+| `msr-sync import <类型> <来源>` | 导入配置到统一仓库 |
+| `msr-sync sync` | 同步配置到目标 IDE |
+| `msr-sync list` | 查看统一仓库中的配置列表 |
+| `msr-sync remove <类型> <名称> <版本>` | 删除指定配置版本 |
+
+更多详细用法请参阅 [使用文档](docs/usage.md)。
+
+## 许可证
+
+MIT License

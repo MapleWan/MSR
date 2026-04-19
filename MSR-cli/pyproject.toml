@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msr-sync"
+version = "0.1.0"
+description = "统一管理多款 AI IDE 的 rules、skills、MCP 配置"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+
+dependencies = [
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "hypothesis>=6.0",
+]
+
+[project.scripts]
+msr-sync = "msr_sync.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["msr_sync*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

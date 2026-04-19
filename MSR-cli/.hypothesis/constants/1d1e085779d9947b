@@ -1,0 +1,4 @@
+# file: /Users/maplewan/keep-going/codes/5_projects/MSR-v2/MSR-cli/msr_sync/cli.py
+# hypothesis_version: 6.151.11
+
+['--ide', '--merge', '--name', '--project-dir', '--scope', '--type', '--version', 'all', 'codebuddy', 'config_type', 'global', 'import', 'lingma', 'list', 'mcp', 'name', 'project', 'qoder', 'rules', 'skills', 'source', 'trae', 'version', '合并已有 IDE 配置到统一仓库']
