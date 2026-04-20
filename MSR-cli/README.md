@@ -2,11 +2,119 @@
 
 统一管理多款国内 AI IDE 的 rules、skills、MCP 配置的轻量化命令行工具。
 
+## 为什么需要 MSR-cli？
+
+随着国内 AI IDE 生态的快速发展，开发者往往需要在多款 AI IDE（如 Trae、Qoder、Lingma、CodeBuddy）之间切换使用。然而，这些 IDE 的配置体系存在以下痛点：
+
+- **配置相互隔离**：每个 IDE 都有独立的 rules、skills、MCP 配置目录，互不相通。在一个 IDE 中精心调试好的配置，无法直接用于另一个 IDE。
+- **跨 IDE 迁移成本高**：不同 IDE 的配置路径、文件格式、frontmatter 规范各不相同，手动迁移需要逐一理解每个 IDE 的约定，极易出错。
+- **配置格式不统一**：Trae 不需要 frontmatter 头部、Qoder/Lingma 需要 `trigger: always_on`、CodeBuddy 需要 `alwaysApply` + `updatedAt` 时间戳——同样的规则内容，需要为每个 IDE 生成不同格式。
+- **版本管理缺失**：IDE 本身不提供配置版本管理能力，更新配置后无法回滚到历史版本。
+- **团队协作困难**：团队成员之间难以共享统一的基础配置，每人各自维护一套，容易产生不一致。
+
+MSR-cli 正是为了解决这些问题而生——通过建立统一的本地仓库作为配置的"Single Source of Truth"，一次导入、多端同步，自动处理各 IDE 的格式差异，并提供版本管理能力。
+
 ## 简介
 
 MSR-cli 是一个基于 Python 开发的命令行工具，命令名为 `msr-sync`，旨在解决国内主流 AI IDE 之间配置相互独立、跨 IDE 迁移需手动复制、配置格式与路径不统一等核心痛点。
 
 通过建立统一的本地仓库（默认 `~/.msr-repos`），MSR-cli 提供配置的导入、同步、查看、删除等完整生命周期管理能力，让你在多款 AI IDE 之间轻松共享和迁移配置。工具支持全局配置文件，可自定义仓库路径、忽略模式、默认 IDE 和同步层级。
+
+### 导入时支持的格式
+
+`msr-sync import` 命令支持多种来源格式，不同配置类型的格式要求如下：
+
+#### Rules（规则）
+
+| 来源格式 | 说明 | 示例 |
+|---------|------|------|
+| 单个 `.md` 文件 | 导入为一条 rule，名称取文件名（去除扩展名） | `msr-sync import rules ./my-rule.md` |
+| 包含 `.md` 文件的目录 | 扫描目录下所有 `.md` 文件，每个文件作为一条 rule | `msr-sync import rules ./rules-dir/` |
+| 压缩包（`.zip` / `.tar.gz` / `.tgz`） | 自动解压后按目录规则扫描 | `msr-sync import rules ./rules-pack.zip` |
+| URL | 下载远程压缩包后按压缩包规则处理 | `msr-sync import rules https://example.com/rules.zip` |
+
+#### Skills（技能）
+
+| 来源格式 | 说明 | 示例 |
+|---------|------|------|
+| 含 `SKILL.md` 的目录 | 视为单个 skill，名称取目录名 | `msr-sync import skills ./my-skill/` |
+| 包含多个子目录的目录 | 每个子目录视为一个独立 skill（需各含 `SKILL.md`） | `msr-sync import skills ./skills-pack/` |
+| 压缩包（`.zip` / `.tar.gz` / `.tgz`） | 自动解压后按目录规则扫描 | `msr-sync import skills ./skills-pack.zip` |
+| URL | 下载远程压缩包后按压缩包规则处理 | `msr-sync import skills https://example.com/skills.zip` |
+
+> **Skill 识别规则：** 目录根目录存在 `SKILL.md` 文件时，视为单个 skill；否则将每个子目录视为独立 skill。
+
+#### MCP（Model Context Protocol）
+
+| 来源格式 | 说明 | 示例 |
+|---------|------|------|
+| 含 `mcp.json` 的目录 | 根目录含非子目录文件时，视为单个 MCP 配置，**同步时必须包含 `mcp.json`** | `msr-sync import mcp ./my-mcp/` |
+| 包含多个子目录的目录 | 每个子目录视为一个独立 MCP 配置（需各含 `mcp.json`） | `msr-sync import mcp ./mcp-pack/` |
+| 压缩包（`.zip` / `.tar.gz` / `.tgz`） | 自动解压后按目录规则扫描 | `msr-sync import mcp ./mcp-pack.zip` |
+| URL | 下载远程压缩包后按压缩包规则处理 | `msr-sync import mcp https://example.com/mcp.zip` |
+
+> **MCP 识别规则：** 目录根目录存在非子目录文件时，视为单个 MCP；否则将每个子目录视为独立 MCP 配置。
+>
+> **⚠️ 重要：** 同步 MCP 配置时，工具会查找目录下的 `mcp.json` 文件。如果该文件不存在，同步将被跳过并输出警告。
+
+##### `mcp.json` 文件格式
+
+`mcp.json` 采用标准 JSON 格式，顶层必须包含 `mcpServers` 字段，每个 server 条目定义一个 MCP 工具服务：
+
+```json
+{
+  "mcpServers": {
+    "<server-name>": {
+      "command": "<启动命令>",
+      "args": ["<参数1>", "<参数2>"],
+      "cwd": "<工作目录（可选，同步时会自动重写为仓库路径）>",
+      "env": {
+        "<环境变量名>": "<值>"
+      }
+    }
+  }
+}
+```
+
+**字段说明：**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `mcpServers` | ✅ | 顶层字段，包含所有 MCP server 定义 |
+| `mcpServers.<name>.command` | ✅ | 启动 MCP 服务的命令（如 `python`、`node`、`npx`） |
+| `mcpServers.<name>.args` | ✅ | 命令参数列表 |
+| `mcpServers.<name>.cwd` | ❌ | 工作目录，同步时会自动重写为统一仓库中对应版本的路径 |
+| `mcpServers.<name>.env` | ❌ | 环境变量字典 |
+
+**完整示例：**
+
+```json
+{
+  "mcpServers": {
+    "word-reader": {
+      "command": "python",
+      "args": ["server.py"],
+      "cwd": ".",
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "web-search": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/web-search-mcp"]
+    }
+  }
+}
+```
+
+> **cwd 重写机制：** 同步时，如果 server 配置中包含 `cwd` 字段，工具会自动将其替换为统一仓库中该配置版本的绝对路径（如 `~/.msr-repos/MCP/my-mcp/V1`），确保 MCP 服务能在正确的目录下启动。
+
+#### 通用说明
+
+- **压缩包格式：** 支持 `.zip`、`.tar.gz`、`.tgz` 三种格式
+- **URL 导入：** 仅支持指向压缩包的 URL，工具会自动将 GitHub `blob` 链接转换为 `raw` 链接
+- **忽略过滤：** 导入扫描时自动跳过 `__MACOSX`、`.DS_Store`、`__pycache__`、`.git` 等目录和文件，可通过全局配置文件自定义忽略模式
+- **批量确认：** 当来源中包含多个配置项时，工具会逐一询问是否导入；单个配置项则直接导入
 
 ## 支持的 IDE
 
