@@ -170,11 +170,17 @@ MSR-cli 为每个配置条目提供多版本管理能力：
 
 - **版本命名格式：** `V` + 递增正整数（V1、V2、V3……）
 - **导入时：** 若同名配置已存在，自动在最大版本号基础上加一创建新版本
-- **同步时：** 默认使用最新版本（最大版本号），可通过 `--version` 参数指定特定版本
+- **同步时：** 未指定 `--version` 时，**默认同步最新版本**（即版本号最大的版本）；可通过 `--version` 参数指定特定版本
+- **提示信息：** 同步时会在输出中显示实际使用的版本号，如 `✅ 已同步 skill 'my-skill' (V2) 到 qoder (global)`
 
 ```bash
+# 同步最新版本（默认行为）
+msr-sync sync --type rules --name my-rule
+# 输出: ✅ 已同步 rule 'my-rule' (V3) 到 qoder (global)
+
 # 同步指定版本
 msr-sync sync --name my-rule --version V1
+# 输出: ✅ 已同步 rule 'my-rule' (V1) 到 qoder (global)
 
 # 查看所有版本
 msr-sync list

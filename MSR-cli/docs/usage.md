@@ -218,7 +218,7 @@ msr-sync sync [--ide IDE] [--scope SCOPE] [--project-dir DIR] [--type TYPE] [--n
 | `--project-dir` | 路径 | 否 | 当前工作目录 | 项目目录路径，仅在 `--scope project` 时生效 |
 | `--type` | 选项 | 否 | 全部 | 配置类型过滤，可选值：`rules`、`skills`、`mcp` |
 | `--name` | 字符串 | 否 | 全部 | 仅同步指定名称的配置 |
-| `--version` | 字符串 | 否 | 最新版本 | 仅同步指定版本（如 `V1`） |
+| `--version` | 字符串 | 否 | 最新版本 | 仅同步指定版本（如 `V1`）。未指定时默认使用每个配置的最新版本（版本号最大的） |
 
 ### 使用示例
 
@@ -263,6 +263,8 @@ msr-sync sync --type rules --name coding-standards
 ```bash
 msr-sync sync --type rules --name coding-standards --version V1
 ```
+
+> **版本默认行为：** 未指定 `--version` 时，每个配置自动使用最新版本（版本号最大的）。同步提示信息中会显示实际使用的版本号，例如：`✅ 已同步 rule 'coding-standards' (V3) 到 trae (global)`。
 
 **组合示例 — 将指定 rule 的 V2 版本同步到 Trae 的项目级目录：**
 

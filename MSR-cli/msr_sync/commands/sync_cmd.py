@@ -98,6 +98,13 @@ def sync_handler(
             continue
 
         for config_name, versions in configs.items():
+            # 在同步前显示将要使用的版本
+            if version is not None:
+                display_ver = version
+            else:
+                display_ver = versions[-1] if versions else "?"
+            click.echo(f"\n📌 {ct}/{config_name} — 使用版本: {display_ver}")
+
             for adapter in adapters:
                 try:
                     count = _sync_config(
@@ -148,12 +155,19 @@ def _sync_config(
     Returns:
         成功同步的条目数（0 或 1）
     """
+    # 解析实际使用的版本号（用于提示信息）
+    resolved_version = version
+    if resolved_version is None:
+        from msr_sync.core.version import get_latest_version
+        config_dir = repo.base_path / repo._resolve_config_dir(config_type) / config_name
+        resolved_version = get_latest_version(config_dir)
+
     if config_type == ConfigType.RULES.value:
-        return _sync_rule(repo, adapter, config_name, version, scope, project_dir)
+        return _sync_rule(repo, adapter, config_name, version, resolved_version, scope, project_dir)
     elif config_type == ConfigType.MCP.value:
-        return _sync_mcp(repo, adapter, config_name, version)
+        return _sync_mcp(repo, adapter, config_name, version, resolved_version)
     elif config_type == ConfigType.SKILLS.value:
-        return _sync_skill(repo, adapter, config_name, version, scope, project_dir)
+        return _sync_skill(repo, adapter, config_name, version, resolved_version, scope, project_dir)
     return 0
 
 
@@ -167,6 +181,7 @@ def _sync_rule(
     adapter: BaseAdapter,
     rule_name: str,
     version: Optional[str],
+    resolved_version: Optional[str],
     scope: str,
     project_dir: Optional[Path],
 ) -> int:
@@ -210,7 +225,7 @@ def _sync_rule(
     target_path.write_text(formatted_content, encoding="utf-8")
 
     click.echo(
-        f"  ✅ 已同步 rule '{rule_name}' 到 {adapter.ide_name} ({scope})"
+        f"  ✅ 已同步 rule '{rule_name}' ({resolved_version}) 到 {adapter.ide_name} ({scope})"
     )
     return 1
 
@@ -225,6 +240,7 @@ def _sync_mcp(
     adapter: BaseAdapter,
     mcp_name: str,
     version: Optional[str],
+    resolved_version: Optional[str],
 ) -> int:
     """同步单个 MCP 配置到目标 IDE。
 
@@ -338,6 +354,7 @@ def _sync_skill(
     adapter: BaseAdapter,
     skill_name: str,
     version: Optional[str],
+    resolved_version: Optional[str],
     scope: str,
     project_dir: Optional[Path],
 ) -> int:
@@ -372,7 +389,7 @@ def _sync_skill(
             shutil.rmtree(target_path)
             shutil.copytree(source_dir, target_path)
             click.echo(
-                f"  ✅ 已覆盖 skill '{skill_name}' 到 {adapter.ide_name} ({scope})"
+                f"  ✅ 已覆盖 skill '{skill_name}' ({resolved_version}) 到 {adapter.ide_name} ({scope})"
             )
             return 1
         else:
@@ -383,6 +400,6 @@ def _sync_skill(
         target_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source_dir, target_path)
         click.echo(
-            f"  ✅ 已同步 skill '{skill_name}' 到 {adapter.ide_name} ({scope})"
+            f"  ✅ 已同步 skill '{skill_name}' ({resolved_version}) 到 {adapter.ide_name} ({scope})"
         )
         return 1
