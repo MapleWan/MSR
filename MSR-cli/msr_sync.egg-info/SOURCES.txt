@@ -32,6 +32,7 @@ msr_sync/core/source_resolver.py
 msr_sync/core/version.py
 tests/test_adapters.py
 tests/test_adapters_base.py
+tests/test_bug_condition_mcp.py
 tests/test_cli_integration.py
 tests/test_codebuddy_adapter.py
 tests/test_commands.py
@@ -42,6 +43,7 @@ tests/test_integration.py
 tests/test_lingma_adapter.py
 tests/test_mcp_merge.py
 tests/test_platform.py
+tests/test_preservation_mcp.py
 tests/test_qoder_adapter.py
 tests/test_repository.py
 tests/test_source_resolver.py

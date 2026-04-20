@@ -73,7 +73,7 @@ def test_mcp_merge_preserves_existing_entries(
 
         # 创建目标 mcp.json（已有条目）
         if existing_servers:
-            target_data = {"servers": dict(existing_servers)}
+            target_data = {"mcpServers": dict(existing_servers)}
             target_path.write_text(
                 json.dumps(target_data, indent=2, ensure_ascii=False),
                 encoding="utf-8",
@@ -97,13 +97,13 @@ def test_mcp_merge_preserves_existing_entries(
             # 没有新条目时，文件不应被修改（如果原来存在的话）
             if existing_servers:
                 result_data = json.loads(target_path.read_text(encoding="utf-8"))
-                assert result_data["servers"] == existing_servers
+                assert result_data["mcpServers"] == existing_servers
             return
 
         # 读取合并后的结果
         assert target_path.is_file(), "合并后目标文件应存在"
         result_data = json.loads(target_path.read_text(encoding="utf-8"))
-        result_servers = result_data.get("servers", {})
+        result_servers = result_data.get("mcpServers", {})
 
         # 验证：所有原有条目仍然存在且内容不变
         for name, config in existing_servers.items():

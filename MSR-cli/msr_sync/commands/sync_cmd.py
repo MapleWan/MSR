@@ -270,10 +270,15 @@ def _sync_mcp(
     except (json.JSONDecodeError, ValueError) as e:
         raise ConfigParseError(f"MCP 配置文件格式错误: {source_mcp_file}: {e}")
 
-    source_servers = source_data.get("servers", {})
+    source_servers = source_data.get("mcpServers", {})
     if not source_servers:
-        click.echo(f"⚠️ MCP 配置 '{mcp_name}' 中没有 servers 条目")
+        click.echo(f"⚠️ MCP 配置 '{mcp_name}' 中没有 mcpServers 条目")
         return 0
+
+    # cwd 路径重写：将含有 cwd 的 server 配置的 cwd 替换为统一仓库路径
+    for server_config in source_servers.values():
+        if "cwd" in server_config:
+            server_config["cwd"] = str(source_dir)
 
     # 获取目标 MCP 路径
     target_path = adapter.get_mcp_path()
@@ -312,24 +317,24 @@ def _merge_mcp_config(
     else:
         target_data = {}
 
-    if "servers" not in target_data:
-        target_data["servers"] = {}
+    if "mcpServers" not in target_data:
+        target_data["mcpServers"] = {}
 
     for server_name, server_config in source_servers.items():
-        if server_name in target_data["servers"]:
+        if server_name in target_data["mcpServers"]:
             # 同名条目已存在，提示用户确认覆盖
             if click.confirm(
                 f"  {ide_name} 的 MCP 配置中已存在 '{server_name}'，是否覆盖?",
                 default=False,
             ):
-                target_data["servers"][server_name] = server_config
+                target_data["mcpServers"][server_name] = server_config
                 click.echo(f"  ✅ 已覆盖 MCP 条目 '{server_name}' 到 {ide_name}")
                 synced += 1
             else:
                 click.echo(f"  ⏭️ 已跳过 MCP 条目 '{server_name}'")
         else:
             # 无冲突，直接追加
-            target_data["servers"][server_name] = server_config
+            target_data["mcpServers"][server_name] = server_config
             click.echo(f"  ✅ 已同步 MCP 条目 '{server_name}' 到 {ide_name}")
             synced += 1
 
