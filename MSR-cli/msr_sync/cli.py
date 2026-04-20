@@ -42,10 +42,10 @@ def import_config(config_type, source):
 @click.option(
     "--ide",
     multiple=True,
-    default=("all",),
+    default=None,
     type=click.Choice(["trae", "qoder", "lingma", "codebuddy", "all"]),
 )
-@click.option("--scope", default="global", type=click.Choice(["project", "global"]))
+@click.option("--scope", default=None, type=click.Choice(["project", "global"]))
 @click.option("--project-dir", default=None, type=click.Path())
 @click.option(
     "--type",
@@ -58,6 +58,15 @@ def import_config(config_type, source):
 def sync(ide, scope, project_dir, config_type, name, version):
     """同步配置到目标 IDE"""
     from msr_sync.commands.sync_cmd import sync_handler
+    from msr_sync.core.config import get_config
+
+    cfg = get_config()
+
+    # 命令行未指定时使用配置值
+    if ide is None or len(ide) == 0:
+        ide = tuple(cfg.default_ides)
+    if scope is None:
+        scope = cfg.default_scope
 
     try:
         sync_handler(

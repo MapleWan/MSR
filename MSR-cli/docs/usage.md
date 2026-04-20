@@ -11,6 +11,7 @@
 - [msr-sync sync — 配置同步](#msr-sync-sync--配置同步)
 - [msr-sync list — 查看配置列表](#msr-sync-list--查看配置列表)
 - [msr-sync remove — 删除配置](#msr-sync-remove--删除配置)
+- [全局配置文件](#全局配置文件)
 - [IDE 配置路径参考表](#ide-配置路径参考表)
 - [常见使用场景](#常见使用场景)
 - [错误排查指南](#错误排查指南)
@@ -19,7 +20,7 @@
 
 ## msr-sync init — 初始化仓库
 
-初始化统一配置仓库，在 `~/.msr-repos` 下创建标准目录结构。
+初始化统一配置仓库，在 `~/.msr-repos` 下创建标准目录结构，并在 `~/.msr-sync/config.yaml` 生成带注释的默认配置文件。
 
 ### 命令格式
 
@@ -39,7 +40,9 @@ msr-sync init [--merge]
 
 ```bash
 msr-sync init
-# 输出: ✅ 统一仓库已创建: /Users/username/.msr-repos
+# 输出:
+# ✅ 统一仓库已创建: /Users/username/.msr-repos
+# ✅ 已生成默认配置文件: /Users/username/.msr-sync/config.yaml
 ```
 
 **重复初始化（幂等操作）：**
@@ -71,6 +74,9 @@ msr-sync init --merge
 ├── RULES/
 ├── SKILLS/
 └── MCP/
+
+~/.msr-sync/
+└── config.yaml          # 全局配置文件（自动生成）
 ```
 
 ---
@@ -207,8 +213,8 @@ msr-sync sync [--ide IDE] [--scope SCOPE] [--project-dir DIR] [--type TYPE] [--n
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `--ide` | 选项（可多次指定） | 否 | `all` | 目标 IDE，可选值：`trae`、`qoder`、`lingma`、`codebuddy`、`all` |
-| `--scope` | 选项 | 否 | `global` | 同步层级，可选值：`project`（项目级）、`global`（全局级） |
+| `--ide` | 选项（可多次指定） | 否 | 配置文件值或 `all` | 目标 IDE，可选值：`trae`、`qoder`、`lingma`、`codebuddy`、`all` |
+| `--scope` | 选项 | 否 | 配置文件值或 `global` | 同步层级，可选值：`project`（项目级）、`global`（全局级） |
 | `--project-dir` | 路径 | 否 | 当前工作目录 | 项目目录路径，仅在 `--scope project` 时生效 |
 | `--type` | 选项 | 否 | 全部 | 配置类型过滤，可选值：`rules`、`skills`、`mcp` |
 | `--name` | 字符串 | 否 | 全部 | 仅同步指定名称的配置 |
@@ -386,6 +392,86 @@ msr-sync remove rules non-existent V1
 
 ---
 
+## 全局配置文件
+
+MSR-cli 支持通过全局配置文件 `~/.msr-sync/config.yaml` 自定义工具行为。执行 `msr-sync init` 时会自动生成带中文注释的默认配置文件。
+
+### 配置文件位置
+
+```
+~/.msr-sync/config.yaml
+```
+
+### 完整配置示例
+
+```yaml
+# MSR-sync 全局配置文件
+# 文件位置: ~/.msr-sync/config.yaml
+
+# 统一仓库路径（支持 ~ 展开，默认 ~/.msr-repos）
+repo_path: ~/.msr-repos
+
+# 导入扫描时忽略的目录和文件模式
+# 支持精确匹配（如 __MACOSX）和通配符匹配（如 *.pyc）
+ignore_patterns:
+  - __MACOSX
+  - .DS_Store
+  - __pycache__
+  - .git
+  - "*.pyc"
+
+# 默认同步目标 IDE 列表
+# 可选值: trae, qoder, lingma, codebuddy, all
+default_ides:
+  - trae
+  - codebuddy
+
+# 默认同步层级（global 或 project）
+default_scope: global
+```
+
+### 配置项详解
+
+| 配置项 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `repo_path` | 字符串 | `~/.msr-repos` | 统一仓库根目录路径，支持 `~` 展开 |
+| `ignore_patterns` | 字符串列表 | `[__MACOSX, .DS_Store, __pycache__, .git]` | 导入扫描和压缩包解压时忽略的目录和文件模式 |
+| `default_ides` | 字符串列表 | `[all]` | `sync` 命令未指定 `--ide` 时使用的默认目标 IDE |
+| `default_scope` | 字符串 | `global` | `sync` 命令未指定 `--scope` 时使用的默认同步层级 |
+
+### 忽略模式说明
+
+`ignore_patterns` 支持两种匹配方式：
+
+- **精确匹配：** 不含通配符的模式（如 `__MACOSX`、`.DS_Store`）按名称精确匹配
+- **通配符匹配：** 含 `*`、`?`、`[` 的模式（如 `*.pyc`、`test_*`）使用 shell 风格的 glob 匹配
+
+忽略模式仅匹配文件名或目录名，不匹配完整路径。在以下场景中生效：
+
+- `msr-sync import` 扫描目录检测配置项时
+- 压缩包（`.zip`、`.tar.gz`）解压后扫描内容时
+
+### 优先级规则
+
+- **配置文件不存在时：** 使用内置默认值，工具行为不受影响
+- **配置文件为空时：** 使用内置默认值
+- **部分配置时：** 已设置的项使用用户值，未设置的项使用默认值
+- **命令行参数 > 配置文件：** `--ide`、`--scope` 等命令行参数优先级高于配置文件中的值
+- **修改配置后：** 下次执行命令时自动生效，无需重启
+
+### 配置校验
+
+| 场景 | 行为 |
+|------|------|
+| `default_ides` 包含无效 IDE 名称 | 输出警告并忽略该条目，其余有效条目正常使用 |
+| `default_ides` 全部无效或为空列表 | 回退到默认值 `[all]` |
+| `default_scope` 不是 `global` 或 `project` | 输出警告并回退到默认值 `global` |
+| `repo_path` 为空字符串 | 回退到默认值 `~/.msr-repos` |
+| 配置文件包含未识别的键 | 静默忽略，不影响其他配置项 |
+| YAML 语法错误 | 输出错误信息（含文件路径）并终止执行 |
+
+---
+
 ## IDE 配置路径参考表
 
 以下是各 IDE 在不同平台上的配置路径。`msr-sync` 会自动根据当前平台解析正确的路径。
@@ -507,6 +593,40 @@ msr-sync sync --type rules
 msr-sync sync --type mcp --ide qoder --ide lingma
 ```
 
+### 场景七：自定义全局配置
+
+```bash
+# 1. 初始化仓库（自动生成配置文件）
+msr-sync init
+
+# 2. 编辑配置文件，设置只同步到 Trae 和 CodeBuddy
+# 编辑 ~/.msr-sync/config.yaml:
+#   default_ides:
+#     - trae
+#     - codebuddy
+
+# 3. 之后执行 sync 无需每次指定 --ide
+msr-sync sync --type rules
+# 等同于: msr-sync sync --type rules --ide trae --ide codebuddy
+```
+
+### 场景八：添加自定义忽略模式
+
+```bash
+# 编辑 ~/.msr-sync/config.yaml，添加忽略模式:
+#   ignore_patterns:
+#     - __MACOSX
+#     - .DS_Store
+#     - __pycache__
+#     - .git
+#     - "*.pyc"
+#     - node_modules
+#     - .venv
+
+# 之后导入压缩包时会自动跳过这些目录
+msr-sync import skills ./skills-pack.zip
+```
+
 ---
 
 ## 错误排查指南
@@ -603,3 +723,34 @@ msr-sync sync --type rules --scope project
 
 1. 检查目标目录的权限设置
 2. 确认当前用户有写入权限
+
+#### ❌ 配置文件 YAML 语法错误: {path}
+
+**原因：** `~/.msr-sync/config.yaml` 文件包含非法的 YAML 语法。
+
+**解决方法：**
+
+1. 检查配置文件中是否有缩进错误、缺少冒号、引号不匹配等问题
+2. 使用在线 YAML 校验工具验证文件格式
+3. 如果不确定如何修复，可以删除配置文件后重新执行 `msr-sync init` 生成默认配置
+
+```bash
+rm ~/.msr-sync/config.yaml
+msr-sync init
+```
+
+#### ⚠️ 配置文件中的 IDE 名称无效，已忽略: {name}
+
+**原因：** `~/.msr-sync/config.yaml` 中的 `default_ides` 列表包含不支持的 IDE 名称。
+
+**解决方法：**
+
+确认 IDE 名称拼写正确，支持的值为：`trae`、`qoder`、`lingma`、`codebuddy`、`all`。
+
+#### ⚠️ 配置文件中的 default_scope 值无效，已使用默认值 'global': {value}
+
+**原因：** `~/.msr-sync/config.yaml` 中的 `default_scope` 不是 `global` 或 `project`。
+
+**解决方法：**
+
+将 `default_scope` 修改为 `global` 或 `project`。

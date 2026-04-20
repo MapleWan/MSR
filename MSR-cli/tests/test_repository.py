@@ -507,3 +507,40 @@ class TestUninitializedRepo:
 
         with pytest.raises(RepositoryNotFoundError):
             repo.read_rule_content("my-rule")
+
+
+# =============================================================================
+# Repository 配置集成测试 (需求 3.3)
+# =============================================================================
+
+import pytest
+from unittest.mock import patch
+from msr_sync.core.config import GlobalConfig, reset_config
+
+
+@pytest.fixture
+def _reset_config():
+    """重置全局配置单例。"""
+    reset_config()
+    yield
+    reset_config()
+
+
+class TestRepositoryConfigIntegration:
+    """需求 3.3: Repository 使用配置 repo_path"""
+
+    def test_repository_uses_config_repo_path_when_no_base_path(self, tmp_path, _reset_config):
+        """不传 base_path 的 Repository() 使用 GlobalConfig 中的值"""
+        custom_path = tmp_path / "custom-repos"
+        mock_config = GlobalConfig(repo_path=str(custom_path))
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            repo = Repository()
+            assert repo.base_path == custom_path
+
+    def test_repository_uses_explicit_base_path_when_provided(self, tmp_path, _reset_config):
+        """Repository(base_path=custom) 仍使用显式传入的路径"""
+        explicit_path = tmp_path / "explicit-repos"
+        mock_config = GlobalConfig(repo_path=str(tmp_path / "config-repos"))
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            repo = Repository(base_path=explicit_path)
+            assert repo.base_path == explicit_path

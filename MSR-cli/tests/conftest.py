@@ -11,6 +11,15 @@ settings.register_profile("default", max_examples=100)
 settings.load_profile("default")
 
 
+@pytest.fixture(autouse=True)
+def _reset_global_config():
+    """每个测试前后重置全局配置单例，避免状态泄漏。"""
+    from msr_sync.core.config import reset_config
+    reset_config()
+    yield
+    reset_config()
+
+
 @pytest.fixture
 def tmp_repo(tmp_path: Path) -> Path:
     """创建临时仓库目录，用于隔离文件系统操作"""

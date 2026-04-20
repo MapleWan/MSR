@@ -28,6 +28,15 @@ def init_handler(merge: bool, base_path: Optional[Path] = None) -> None:
     else:
         click.echo("统一仓库已初始化，跳过创建")
 
+    # 生成默认配置文件（如果不存在）
+    from msr_sync.core.config import generate_default_config, CONFIG_FILE_PATH
+
+    config_path = CONFIG_FILE_PATH
+    if generate_default_config(config_path):
+        click.echo("✅ 已生成默认配置文件: {}".format(config_path))
+    elif is_new:
+        click.echo("配置文件已存在，跳过生成: {}".format(config_path))
+
     if merge:
         _merge_existing_configs(repo)
 
@@ -65,8 +74,8 @@ def _merge_existing_configs(repo: Repository) -> None:
                     summary["rules"].setdefault(ide_name, 0)
                     summary["rules"][ide_name] += 1
                     total_imported += 1
-            except Exception:
-                click.echo(f"  ⚠️ 导入 {ide_name} rule '{rule_name}' 时出错，已跳过")
+            except Exception as e:
+                click.echo(f"  ⚠️ 导入 {ide_name} rule '{rule_name}' 时出错，已跳过: {e}")
 
         # 导入 skills
         for skill_name in configs.get("skills", []):
@@ -77,18 +86,20 @@ def _merge_existing_configs(repo: Repository) -> None:
                     summary["skills"].setdefault(ide_name, 0)
                     summary["skills"][ide_name] += 1
                     total_imported += 1
-            except Exception:
-                click.echo(f"  ⚠️ 导入 {ide_name} skill '{skill_name}' 时出错，已跳过")
+            except Exception as e:
+                click.echo(f"  ⚠️ 导入 {ide_name} skill '{skill_name}' 时出错，已跳过: {e}")
 
         # 导入 mcp
         for mcp_item in configs.get("mcp", []):
             try:
                 mcp_path = Path(mcp_item)
                 if mcp_path.exists() and mcp_path.is_file():
+                    raw_text = mcp_path.read_text(encoding="utf-8").strip()
+                    if not raw_text:
+                        # 空文件，跳过
+                        continue
                     # 解析 mcp.json 中的 servers 条目
-                    mcp_content = json.loads(
-                        mcp_path.read_text(encoding="utf-8")
-                    )
+                    mcp_content = json.loads(raw_text)
                     servers = mcp_content.get("servers", {})
                     for mcp_name in servers:
                         # 为每个 MCP server 创建临时目录并存储
@@ -109,8 +120,8 @@ def _merge_existing_configs(repo: Repository) -> None:
                             summary["mcp"].setdefault(ide_name, 0)
                             summary["mcp"][ide_name] += 1
                             total_imported += 1
-            except Exception:
-                click.echo(f"  ⚠️ 导入 {ide_name} MCP 配置时出错，已跳过")
+            except Exception as e:
+                click.echo(f"  ⚠️ 导入 {ide_name} MCP 配置时出错，已跳过: {e}")
 
     # 输出合并摘要
     click.echo(f"\n📊 合并摘要（共导入 {total_imported} 项配置）:")

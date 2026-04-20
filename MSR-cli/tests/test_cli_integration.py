@@ -195,3 +195,80 @@ class TestSyncCommand:
         assert result.exit_code == 0
         assert "不支持全局级 rules" in result.output
         assert "已跳过" in result.output
+
+
+# ============================================================
+# CLI sync 命令配置集成测试 (需求 4.2, 4.3, 5.2, 5.3)
+# ============================================================
+
+from unittest.mock import patch, MagicMock
+from msr_sync.core.config import GlobalConfig, reset_config
+
+
+@pytest.fixture
+def _reset_config():
+    """重置全局配置单例。"""
+    reset_config()
+    yield
+    reset_config()
+
+
+class TestSyncCommandConfigIntegration:
+    """sync 命令从配置文件读取默认值的集成测试"""
+
+    def test_sync_uses_config_default_ides_when_no_ide_flag(self, initialized_home, _reset_config):
+        """需求 4.2: msr-sync sync 不指定 --ide 时使用配置文件中的 default_ides"""
+        mock_config = GlobalConfig(default_ides=["trae"], default_scope="global")
+
+        with patch("msr_sync.core.config.get_config", return_value=mock_config), \
+             patch("msr_sync.commands.sync_cmd.sync_handler") as mock_handler:
+            runner = CliRunner()
+            result = runner.invoke(main, ["sync"])
+
+        # sync_handler should have been called with ide=("trae",)
+        assert mock_handler.called
+        call_kwargs = mock_handler.call_args
+        ide_val = call_kwargs.kwargs.get("ide") if call_kwargs.kwargs else call_kwargs[1].get("ide")
+        assert ide_val == ("trae",)
+
+    def test_sync_explicit_ide_overrides_config(self, initialized_home, _reset_config):
+        """需求 4.3: msr-sync sync --ide trae 覆盖配置中的 default_ides"""
+        mock_config = GlobalConfig(default_ides=["qoder"], default_scope="global")
+
+        with patch("msr_sync.core.config.get_config", return_value=mock_config), \
+             patch("msr_sync.commands.sync_cmd.sync_handler") as mock_handler:
+            runner = CliRunner()
+            result = runner.invoke(main, ["sync", "--ide", "trae"])
+
+        assert mock_handler.called
+        call_kwargs = mock_handler.call_args
+        ide_val = call_kwargs.kwargs.get("ide") if call_kwargs.kwargs else call_kwargs[1].get("ide")
+        assert ide_val == ("trae",)
+
+    def test_sync_uses_config_default_scope_when_no_scope_flag(self, initialized_home, _reset_config):
+        """需求 5.2: msr-sync sync 不指定 --scope 时使用配置文件中的 default_scope"""
+        mock_config = GlobalConfig(default_ides=["all"], default_scope="project")
+
+        with patch("msr_sync.core.config.get_config", return_value=mock_config), \
+             patch("msr_sync.commands.sync_cmd.sync_handler") as mock_handler:
+            runner = CliRunner()
+            result = runner.invoke(main, ["sync"])
+
+        assert mock_handler.called
+        call_kwargs = mock_handler.call_args
+        scope_val = call_kwargs.kwargs.get("scope") if call_kwargs.kwargs else call_kwargs[1].get("scope")
+        assert scope_val == "project"
+
+    def test_sync_explicit_scope_overrides_config(self, initialized_home, _reset_config):
+        """需求 5.3: msr-sync sync --scope project 覆盖配置中的 default_scope"""
+        mock_config = GlobalConfig(default_ides=["all"], default_scope="global")
+
+        with patch("msr_sync.core.config.get_config", return_value=mock_config), \
+             patch("msr_sync.commands.sync_cmd.sync_handler") as mock_handler:
+            runner = CliRunner()
+            result = runner.invoke(main, ["sync", "--scope", "project"])
+
+        assert mock_handler.called
+        call_kwargs = mock_handler.call_args
+        scope_val = call_kwargs.kwargs.get("scope") if call_kwargs.kwargs else call_kwargs[1].get("scope")
+        assert scope_val == "project"

@@ -1,5 +1,6 @@
 """来源解析器 — 解析导入来源（文件/目录/压缩包/URL）"""
 
+import fnmatch
 import tarfile
 import tempfile
 import urllib.request
@@ -48,6 +49,30 @@ class SourceResolver:
 
     def __init__(self) -> None:
         self._temp_dirs: List[tempfile.TemporaryDirectory] = []
+
+    def _should_ignore(self, name: str) -> bool:
+        """判断文件名或目录名是否匹配任一忽略模式。
+
+        对每个模式：若模式包含通配符（*、?、[），使用 fnmatch 匹配；
+        否则使用精确匹配。仅匹配文件名/目录名部分，不匹配完整路径。
+
+        Args:
+            name: 文件名或目录名（不含路径）
+
+        Returns:
+            True 表示应跳过
+        """
+        from msr_sync.core.config import get_config
+
+        patterns = get_config().ignore_patterns
+        for pattern in patterns:
+            if any(c in pattern for c in ('*', '?', '[')):
+                if fnmatch.fnmatch(name, pattern):
+                    return True
+            else:
+                if name == pattern:
+                    return True
+        return False
 
     def resolve(
         self, source: str, config_type: str
@@ -182,6 +207,8 @@ class SourceResolver:
         """解析 rules 目录，检测所有 .md 文件。"""
         items: List[ResolvedItem] = []
         for md_file in sorted(path.iterdir()):
+            if self._should_ignore(md_file.name):
+                continue
             if md_file.is_file() and md_file.suffix.lower() == ".md":
                 items.append(
                     ResolvedItem(
@@ -210,6 +237,8 @@ class SourceResolver:
         # 多个 skill：每个子目录是一个 skill
         items: List[ResolvedItem] = []
         for entry in sorted(path.iterdir()):
+            if self._should_ignore(entry.name):
+                continue
             if entry.is_dir():
                 items.append(
                     ResolvedItem(
@@ -238,6 +267,8 @@ class SourceResolver:
         # 多个 MCP：每个子目录是一个 MCP
         items: List[ResolvedItem] = []
         for entry in sorted(path.iterdir()):
+            if self._should_ignore(entry.name):
+                continue
             if entry.is_dir():
                 items.append(
                     ResolvedItem(

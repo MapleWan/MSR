@@ -27,3 +27,7 @@ class NetworkError(MSRError):
 
 class ConfigParseError(MSRError):
     """配置解析错误"""
+
+
+class ConfigFileError(MSRError):
+    """配置文件解析错误（YAML 语法错误等）"""

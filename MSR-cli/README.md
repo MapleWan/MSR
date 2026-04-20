@@ -6,7 +6,7 @@
 
 MSR-cli 是一个基于 Python 开发的命令行工具，命令名为 `msr-sync`，旨在解决国内主流 AI IDE 之间配置相互独立、跨 IDE 迁移需手动复制、配置格式与路径不统一等核心痛点。
 
-通过建立统一的本地仓库（`~/.msr-repos`），MSR-cli 提供配置的导入、同步、查看、删除等完整生命周期管理能力，让你在多款 AI IDE 之间轻松共享和迁移配置。
+通过建立统一的本地仓库（默认 `~/.msr-repos`），MSR-cli 提供配置的导入、同步、查看、删除等完整生命周期管理能力，让你在多款 AI IDE 之间轻松共享和迁移配置。工具支持全局配置文件，可自定义仓库路径、忽略模式、默认 IDE 和同步层级。
 
 ## 支持的 IDE
 
@@ -55,6 +55,8 @@ pip install -e ".[dev]"
 ```bash
 msr-sync init
 ```
+
+初始化时会自动在 `~/.msr-sync/config.yaml` 生成带注释的默认配置文件。
 
 如果你已经在各 IDE 中有现有配置，可以使用 `--merge` 参数自动扫描并导入：
 
@@ -177,6 +179,55 @@ msr-sync sync --name my-rule --version V1
 # 查看所有版本
 msr-sync list
 ```
+
+## 全局配置
+
+MSR-cli 支持通过全局配置文件自定义工具行为。执行 `msr-sync init` 时会自动生成默认配置文件。
+
+### 配置文件位置
+
+```
+~/.msr-sync/config.yaml
+```
+
+### 配置项
+
+```yaml
+# MSR-sync 全局配置文件
+
+# 统一仓库路径（支持 ~ 展开，默认 ~/.msr-repos）
+# repo_path: ~/.msr-repos
+
+# 导入扫描时忽略的目录和文件模式
+# 支持精确匹配（如 __MACOSX）和通配符匹配（如 *.pyc）
+ignore_patterns:
+  - __MACOSX
+  - .DS_Store
+  - __pycache__
+  - .git
+
+# 默认同步目标 IDE 列表
+# 可选值: trae, qoder, lingma, codebuddy, all
+# default_ides:
+#   - all
+
+# 默认同步层级（global 或 project）
+# default_scope: global
+```
+
+| 配置项 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `repo_path` | 字符串 | `~/.msr-repos` | 统一仓库根目录路径 |
+| `ignore_patterns` | 字符串列表 | `[__MACOSX, .DS_Store, __pycache__, .git]` | 导入扫描时忽略的目录和文件模式 |
+| `default_ides` | 字符串列表 | `[all]` | `sync` 命令的默认目标 IDE |
+| `default_scope` | 字符串 | `global` | `sync` 命令的默认同步层级 |
+
+### 使用说明
+
+- 配置文件不存在时，工具使用内置默认值，行为不受影响
+- 修改配置文件后，下次执行命令时自动生效
+- 命令行参数（如 `--ide`、`--scope`）优先级高于配置文件
+- 配置文件中注释掉的项使用默认值，按需取消注释即可启用
 
 ## 命令概览
 

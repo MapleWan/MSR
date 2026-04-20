@@ -31,7 +31,11 @@ class Repository:
     """
 
     def __init__(self, base_path: Optional[Path] = None):
-        self.base_path = base_path or Path.home() / ".msr-repos"
+        if base_path is not None:
+            self.base_path = base_path
+        else:
+            from msr_sync.core.config import get_config
+            self.base_path = get_config().repo_path
 
     def init(self) -> bool:
         """初始化仓库目录结构。

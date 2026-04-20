@@ -14,13 +14,15 @@ from msr_sync.core.source_resolver import SourceResolver
 # =============================================================================
 
 # 合法的文件/目录名称策略：字母数字加连字符下划线，长度 1-20
+# 排除默认忽略模式中的名称，避免被 _should_ignore 过滤
+_DEFAULT_IGNORE_NAMES = {"__MACOSX", ".DS_Store", "__pycache__", ".git"}
 _valid_name_chars = st.text(
     alphabet=st.sampled_from(
         "abcdefghijklmnopqrstuvwxyz0123456789_-"
     ),
     min_size=1,
     max_size=20,
-).filter(lambda s: s.strip("-_") != "" and not s.startswith("."))
+).filter(lambda s: s.strip("-_") != "" and not s.startswith(".") and s not in _DEFAULT_IGNORE_NAMES)
 
 
 # =============================================================================
@@ -519,3 +521,195 @@ class TestResolveSingleMCPDirectory:
             assert needs_confirm is False
         finally:
             resolver.cleanup()
+
+# =============================================================================
+# 忽略模式过滤测试 (Ignore Pattern Filtering Tests)
+# =============================================================================
+
+from msr_sync.core.config import reset_config, init_config, GlobalConfig
+import fnmatch
+
+
+@pytest.fixture(autouse=False)
+def _reset_config_singleton():
+    """重置全局配置单例，避免状态泄漏。"""
+    reset_config()
+    yield
+    reset_config()
+
+
+# Feature: global-config, Property 2: 忽略模式匹配正确性
+# **Validates: Requirements 2.2, 2.3, 2.5**
+class TestPropertyIgnorePatternMatching:
+    """Property 2: 对于任意文件名和任意忽略模式列表，
+    _should_ignore(name) 应返回 True 当且仅当名称匹配至少一个模式。"""
+
+    @given(
+        name=st.text(
+            min_size=1, max_size=20,
+            alphabet=st.characters(whitelist_categories=("L", "N"), whitelist_characters="-_."),
+        ),
+        patterns=st.lists(
+            st.one_of(
+                # 精确匹配模式
+                st.text(min_size=1, max_size=15, alphabet=st.characters(whitelist_categories=("L", "N"), whitelist_characters="-_.")),
+                # 通配符模式
+                st.from_regex(r"\*\.[a-z]{1,5}", fullmatch=True),
+            ),
+            min_size=0,
+            max_size=5,
+        ),
+    )
+    def test_should_ignore_matches_correctly(self, name, patterns):
+        """_should_ignore 应与手动 fnmatch/精确匹配逻辑一致。"""
+        from unittest.mock import patch
+
+        # 手动计算期望结果
+        expected = False
+        for pattern in patterns:
+            if any(c in pattern for c in ('*', '?', '[')):
+                if fnmatch.fnmatch(name, pattern):
+                    expected = True
+                    break
+            else:
+                if name == pattern:
+                    expected = True
+                    break
+
+        # Mock get_config to return our custom patterns
+        mock_config = GlobalConfig(ignore_patterns=patterns)
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            result = resolver._should_ignore(name)
+
+        assert result == expected
+
+
+# 单元测试：忽略过滤
+class TestIgnoreFilteringUnit:
+    """需求 2.2, 2.3, 2.4, 2.5: SourceResolver 忽略模式过滤"""
+
+    def test_rules_directory_skips_exact_match(self, tmp_path, _reset_config_singleton):
+        """需求 2.2: 目录扫描跳过精确匹配忽略模式的条目（如 __MACOSX、.DS_Store）"""
+        from unittest.mock import patch
+
+        rules_dir = tmp_path / "rules"
+        rules_dir.mkdir()
+        (rules_dir / "good-rule.md").write_text("# Good Rule")
+        (rules_dir / "__MACOSX").mkdir()
+        (rules_dir / ".DS_Store").write_text("")
+
+        mock_config = GlobalConfig(ignore_patterns=["__MACOSX", ".DS_Store"])
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            try:
+                items, _ = resolver.resolve(str(rules_dir), "rules")
+                names = {item.name for item in items}
+                assert "good-rule" in names
+                assert "__MACOSX" not in names
+                assert ".DS_Store" not in names
+            finally:
+                resolver.cleanup()
+
+    def test_rules_directory_skips_wildcard_match(self, tmp_path, _reset_config_singleton):
+        """需求 2.3: 目录扫描跳过通配符匹配的条目（如 *.pyc）"""
+        from unittest.mock import patch
+
+        rules_dir = tmp_path / "rules"
+        rules_dir.mkdir()
+        (rules_dir / "good-rule.md").write_text("# Good Rule")
+        (rules_dir / "cache.pyc").write_text("")
+
+        mock_config = GlobalConfig(ignore_patterns=["*.pyc"])
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            try:
+                items, _ = resolver.resolve(str(rules_dir), "rules")
+                names = {item.name for item in items}
+                assert "good-rule" in names
+                assert "cache" not in names
+            finally:
+                resolver.cleanup()
+
+    def test_archive_applies_same_ignore_filtering(self, tmp_path, _reset_config_singleton):
+        """需求 2.4: 压缩包解压后扫描应用相同的忽略过滤"""
+        from unittest.mock import patch
+
+        zip_path = tmp_path / "rules.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("rules/good-rule.md", "# Good Rule")
+            zf.writestr("rules/.DS_Store", "")
+
+        mock_config = GlobalConfig(ignore_patterns=[".DS_Store"])
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            try:
+                items, _ = resolver.resolve(str(zip_path), "rules")
+                names = {item.name for item in items}
+                assert "good-rule" in names
+                assert ".DS_Store" not in names
+            finally:
+                resolver.cleanup()
+
+    def test_filter_applies_to_name_only_not_full_path(self, tmp_path, _reset_config_singleton):
+        """需求 2.5: 过滤仅作用于条目名称，不作用于完整路径"""
+        from unittest.mock import patch
+
+        # Create a directory structure where the parent path contains the pattern
+        # but the entry name does not
+        rules_dir = tmp_path / "__pycache__" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "my-rule.md").write_text("# My Rule")
+
+        mock_config = GlobalConfig(ignore_patterns=["__pycache__"])
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            try:
+                items, _ = resolver.resolve(str(rules_dir), "rules")
+                # my-rule.md should NOT be filtered because its name doesn't match
+                names = {item.name for item in items}
+                assert "my-rule" in names
+            finally:
+                resolver.cleanup()
+
+    def test_skills_directory_skips_ignored_entries(self, tmp_path, _reset_config_singleton):
+        """需求 2.2: skills 目录扫描跳过忽略模式的条目"""
+        from unittest.mock import patch
+
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        (skills_dir / "good-skill").mkdir()
+        (skills_dir / "good-skill" / "SKILL.md").write_text("# Good")
+        (skills_dir / "__pycache__").mkdir()
+
+        mock_config = GlobalConfig(ignore_patterns=["__pycache__"])
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            try:
+                items, _ = resolver.resolve(str(skills_dir), "skills")
+                names = {item.name for item in items}
+                assert "good-skill" in names
+                assert "__pycache__" not in names
+            finally:
+                resolver.cleanup()
+
+    def test_mcp_directory_skips_ignored_entries(self, tmp_path, _reset_config_singleton):
+        """需求 2.2: mcp 目录扫描跳过忽略模式的条目"""
+        from unittest.mock import patch
+
+        mcp_dir = tmp_path / "mcps"
+        mcp_dir.mkdir()
+        (mcp_dir / "good-mcp").mkdir()
+        (mcp_dir / "good-mcp" / "mcp.json").write_text('{"servers": {}}')
+        (mcp_dir / ".git").mkdir()
+
+        mock_config = GlobalConfig(ignore_patterns=[".git"])
+        with patch("msr_sync.core.config.get_config", return_value=mock_config):
+            resolver = SourceResolver()
+            try:
+                items, _ = resolver.resolve(str(mcp_dir), "mcp")
+                names = {item.name for item in items}
+                assert "good-mcp" in names
+                assert ".git" not in names
+            finally:
+                resolver.cleanup()

@@ -23,6 +23,7 @@ msr_sync/commands/list_cmd.py
 msr_sync/commands/remove_cmd.py
 msr_sync/commands/sync_cmd.py
 msr_sync/core/__init__.py
+msr_sync/core/config.py
 msr_sync/core/exceptions.py
 msr_sync/core/frontmatter.py
 msr_sync/core/platform.py
@@ -34,6 +35,7 @@ tests/test_adapters_base.py
 tests/test_cli_integration.py
 tests/test_codebuddy_adapter.py
 tests/test_commands.py
+tests/test_config.py
 tests/test_exceptions.py
 tests/test_frontmatter.py
 tests/test_integration.py
