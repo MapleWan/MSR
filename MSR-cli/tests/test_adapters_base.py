@@ -146,7 +146,7 @@ class TestRegistry:
 
     def test_registry_contains_all_supported_ides(self):
         """注册表应包含所有支持的 IDE"""
-        expected_ides = {"qoder", "lingma", "trae", "codebuddy", "cursor"}
+        expected_ides = {"qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"}
         assert set(_ADAPTER_REGISTRY.keys()) == expected_ides
 
     def test_get_adapter_invalid_ide_raises_value_error(self):

@@ -24,6 +24,8 @@ from msr_sync.adapters.lingma import LingmaAdapter
 from msr_sync.adapters.trae import TraeAdapter
 from msr_sync.adapters.codebuddy import CodeBuddyAdapter
 from msr_sync.adapters.cursor import CursorAdapter
+from msr_sync.adapters.kiro import KiroAdapter
+from msr_sync.adapters.antigravity import AntigravityAdapter
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +35,7 @@ from msr_sync.adapters.cursor import CursorAdapter
 # Valid config names: alphanumeric + hyphens, non-empty
 config_name_strategy = st.from_regex(r"[a-z][a-z0-9\-]{0,29}", fullmatch=True)
 
-ide_name_strategy = st.sampled_from(["qoder", "lingma", "trae", "codebuddy", "cursor"])
+ide_name_strategy = st.sampled_from(["qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"])
 
 scope_strategy = st.sampled_from(["project", "global"])
 
@@ -48,6 +50,17 @@ def _expected_rules_path(
     ide: str, name: str, scope: str, project_dir: Path, home: Path
 ) -> Path:
     """Return the expected rules path based on requirements 11.1-11.21."""
+    if ide == "kiro":
+        if scope == "project":
+            return project_dir / ".kiro" / "steering" / f"{name}.md"
+        else:
+            return home / ".kiro" / "steering" / f"{name}.md"
+    elif ide == "antigravity":
+        if scope == "project":
+            return project_dir / ".agents" / "rules" / f"{name}.md"
+        else:
+            return home / ".gemini" / "rules" / f"{name}.md"
+
     ide_dot_dirs = {
         "qoder": ".qoder",
         "lingma": ".lingma",
@@ -66,6 +79,17 @@ def _expected_skills_path(
     ide: str, name: str, scope: str, project_dir: Path, home: Path
 ) -> Path:
     """Return the expected skills path based on requirements 11.1-11.21."""
+    if ide == "kiro":
+        if scope == "project":
+            return project_dir / ".kiro" / "skills" / name
+        else:
+            return home / ".kiro" / "skills" / name
+    elif ide == "antigravity":
+        if scope == "project":
+            return project_dir / ".agents" / "workflows" / f"{name}.md"
+        else:
+            return home / ".gemini" / "workflows" / f"{name}.md"
+
     if scope == "project":
         ide_dot_dirs = {
             "qoder": ".qoder",
@@ -181,6 +205,8 @@ def _create_fresh_adapter(ide_name: str) -> BaseAdapter:
         "trae": TraeAdapter,
         "codebuddy": CodeBuddyAdapter,
         "cursor": CursorAdapter,
+        "kiro": KiroAdapter,
+        "antigravity": AntigravityAdapter,
     }
     return adapters[ide_name]()
 
@@ -192,13 +218,13 @@ def _create_fresh_adapter(ide_name: str) -> BaseAdapter:
 class TestAllAdaptersAreBaseAdapter:
     """所有适配器应为 BaseAdapter 的实例"""
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"])
     def test_adapter_is_base_adapter_instance(self, ide_name):
         """每个注册的适配器都应是 BaseAdapter 的子类实例"""
         adapter = get_adapter(ide_name)
         assert isinstance(adapter, BaseAdapter)
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"])
     def test_adapter_ide_name_matches(self, ide_name):
         """适配器的 ide_name 属性应与注册名一致"""
         adapter = get_adapter(ide_name)
@@ -208,12 +234,12 @@ class TestAllAdaptersAreBaseAdapter:
 class TestResolveIdeList:
     """测试 resolve_ide_list 对 'all' 的展开和单个 IDE 的解析"""
 
-    def test_all_expands_to_five_adapters(self):
-        """'all' 应展开为所有 5 个适配器"""
+    def test_all_expands_to_seven_adapters(self):
+        """'all' 应展开为所有 7 个适配器"""
         adapters = resolve_ide_list(("all",))
-        assert len(adapters) == 5
+        assert len(adapters) == 7
         names = {a.ide_name for a in adapters}
-        assert names == {"qoder", "lingma", "trae", "codebuddy", "cursor"}
+        assert names == {"qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"}
 
     def test_single_ide(self):
         """单个 IDE 名称应返回对应的适配器"""
@@ -231,7 +257,7 @@ class TestResolveIdeList:
     def test_all_overrides_individual(self):
         """包含 'all' 时应忽略其他个别 IDE 名称，返回全部"""
         adapters = resolve_ide_list(("trae", "all"))
-        assert len(adapters) == 5
+        assert len(adapters) == 7
 
     def test_invalid_ide_raises(self):
         """不支持的 IDE 名称应抛出 ValueError"""
@@ -253,10 +279,12 @@ class TestSupportsGlobalRules:
             ("trae", False),
             ("codebuddy", True),
             ("cursor", False),
+            ("kiro", True),
+            ("antigravity", False),
         ],
     )
     def test_supports_global_rules(self, ide_name, expected):
-        """只有 CodeBuddy 支持全局级 rules"""
+        """CodeBuddy 和 Kiro 支持全局级 rules"""
         adapter = _create_fresh_adapter(ide_name)
         assert adapter.supports_global_rules() is expected
 
@@ -283,6 +311,20 @@ class TestRulesPathProjectScope:
         project = Path("/test/project")
         path = adapter.get_rules_path("my-rule", "project", project)
         assert path == project / dot_dir / "rules" / "my-rule.md"
+
+    def test_kiro_project_rules_path(self):
+        """Kiro 项目级 rules 路径: <project>/.kiro/steering/<name>.md"""
+        adapter = _create_fresh_adapter("kiro")
+        project = Path("/test/project")
+        path = adapter.get_rules_path("my-rule", "project", project)
+        assert path == project / ".kiro" / "steering" / "my-rule.md"
+
+    def test_antigravity_project_rules_path(self):
+        """Antigravity 项目级 rules 路径: <project>/.agents/rules/<name>.md"""
+        adapter = _create_fresh_adapter("antigravity")
+        project = Path("/test/project")
+        path = adapter.get_rules_path("my-rule", "project", project)
+        assert path == project / ".agents" / "rules" / "my-rule.md"
 
 
 class TestRulesPathGlobalScope:
@@ -312,6 +354,28 @@ class TestRulesPathGlobalScope:
             path = adapter.get_rules_path("my-rule", "global")
             assert path == home / dot_dir / "rules" / "my-rule.md"
 
+    def test_kiro_global_rules_path(self):
+        """Kiro 全局级 rules 路径: ~/.kiro/steering/<name>.md"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("kiro")
+            path = adapter.get_rules_path("my-rule", "global")
+            assert path == home / ".kiro" / "steering" / "my-rule.md"
+
+    def test_antigravity_global_rules_path(self):
+        """Antigravity 全局级 rules 路径: ~/.gemini/rules/<name>.md"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("antigravity")
+            path = adapter.get_rules_path("my-rule", "global")
+            assert path == home / ".gemini" / "rules" / "my-rule.md"
+
 
 class TestSkillsPathProjectScope:
     """测试各 IDE 的项目级 skills 路径解析
@@ -335,6 +399,20 @@ class TestSkillsPathProjectScope:
         project = Path("/test/project")
         path = adapter.get_skills_path("my-skill", "project", project)
         assert path == project / dot_dir / "skills" / "my-skill"
+
+    def test_kiro_project_skills_path(self):
+        """Kiro 项目级 skills 路径: <project>/.kiro/skills/<name>/"""
+        adapter = _create_fresh_adapter("kiro")
+        project = Path("/test/project")
+        path = adapter.get_skills_path("my-skill", "project", project)
+        assert path == project / ".kiro" / "skills" / "my-skill"
+
+    def test_antigravity_project_skills_path(self):
+        """Antigravity 项目级 skills 路径: <project>/.agents/workflows/<name>.md"""
+        adapter = _create_fresh_adapter("antigravity")
+        project = Path("/test/project")
+        path = adapter.get_skills_path("my-skill", "project", project)
+        assert path == project / ".agents" / "workflows" / "my-skill.md"
 
 
 class TestSkillsPathGlobalScope:
@@ -363,6 +441,28 @@ class TestSkillsPathGlobalScope:
             adapter = _create_fresh_adapter(ide_name)
             path = adapter.get_skills_path("my-skill", "global")
             assert path == home / global_dot_dir / "skills" / "my-skill"
+
+    def test_kiro_global_skills_path(self):
+        """Kiro 全局级 skills 路径: ~/.kiro/skills/<name>/"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("kiro")
+            path = adapter.get_skills_path("my-skill", "global")
+            assert path == home / ".kiro" / "skills" / "my-skill"
+
+    def test_antigravity_global_skills_path(self):
+        """Antigravity 全局级 skills 路径: ~/.gemini/workflows/<name>.md"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("antigravity")
+            path = adapter.get_skills_path("my-skill", "global")
+            assert path == home / ".gemini" / "workflows" / "my-skill.md"
 
 
 class TestMcpPathMacOS:
@@ -413,6 +513,28 @@ class TestMcpPathMacOS:
             path = adapter.get_mcp_path()
             assert path == home / ".cursor" / "mcp.json"
 
+    def test_kiro_macos_mcp_path(self):
+        """Kiro macOS MCP 路径: ~/.kiro/mcp.json"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("kiro")
+            path = adapter.get_mcp_path()
+            assert path == home / ".kiro" / "mcp.json"
+
+    def test_antigravity_macos_mcp_path(self):
+        """Antigravity macOS MCP 路径: ~/.gemini/antigravity/mcp_config.json"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("antigravity")
+            path = adapter.get_mcp_path()
+            assert path == home / ".gemini" / "antigravity" / "mcp_config.json"
+
 
 class TestMcpPathWindows:
     """测试各 IDE 在 Windows 上的 MCP 路径解析
@@ -461,6 +583,28 @@ class TestMcpPathWindows:
             adapter = _create_fresh_adapter("cursor")
             path = adapter.get_mcp_path()
             assert path == home / ".cursor" / "mcp.json"
+
+    def test_kiro_windows_mcp_path(self):
+        """Kiro Windows MCP 路径: ~/.kiro/mcp.json (跨平台统一)"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("kiro")
+            path = adapter.get_mcp_path()
+            assert path == home / ".kiro" / "mcp.json"
+
+    def test_antigravity_windows_mcp_path(self):
+        """Antigravity Windows MCP 路径: ~/.gemini/antigravity/mcp_config.json (跨平台统一)"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("antigravity")
+            path = adapter.get_mcp_path()
+            assert path == home / ".gemini" / "antigravity" / "mcp_config.json"
 
 
 class TestFormatRuleContent:
@@ -512,7 +656,21 @@ class TestFormatRuleContent:
         assert "provider:" in result
         assert result.endswith("# Rule\nContent")
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
+    def test_kiro_no_header(self):
+        """Kiro: 不添加额外头部，直接返回原始内容"""
+        adapter = _create_fresh_adapter("kiro")
+        content = "# Rule\nContent"
+        result = adapter.format_rule_content(content)
+        assert result == content
+
+    def test_antigravity_no_header(self):
+        """Antigravity: 不添加额外头部，直接返回原始内容"""
+        adapter = _create_fresh_adapter("antigravity")
+        content = "# Rule\nContent"
+        result = adapter.format_rule_content(content)
+        assert result == content
+
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"])
     def test_format_preserves_content(self, ide_name):
         """所有适配器的 format_rule_content 应保留原始内容"""
         adapter = _create_fresh_adapter(ide_name)
@@ -520,10 +678,10 @@ class TestFormatRuleContent:
         result = adapter.format_rule_content(content)
         assert result.endswith(content)
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor", "kiro", "antigravity"])
     def test_format_empty_content(self, ide_name):
         """所有适配器应能处理空内容"""
         adapter = _create_fresh_adapter(ide_name)
         result = adapter.format_rule_content("")
-        # Should not raise; Trae returns empty, others return header only
+        # Should not raise; Trae/Kiro/Antigravity return empty, others return header only
         assert isinstance(result, str)

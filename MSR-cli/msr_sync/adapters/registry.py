@@ -13,6 +13,8 @@ _ADAPTER_REGISTRY: Dict[str, tuple] = {
     "trae": ("msr_sync.adapters.trae", "TraeAdapter"),
     "codebuddy": ("msr_sync.adapters.codebuddy", "CodeBuddyAdapter"),
     "cursor": ("msr_sync.adapters.cursor", "CursorAdapter"),
+    "kiro": ("msr_sync.adapters.kiro", "KiroAdapter"),
+    "antigravity": ("msr_sync.adapters.antigravity", "AntigravityAdapter"),
 }
 
 # 适配器实例缓存

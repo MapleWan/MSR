@@ -161,3 +161,16 @@ def build_cursor_header() -> str:
         "provider: \n"
         "---\n"
     )
+
+
+def build_antigravity_header() -> str:
+    """生成 Antigravity workflow 的 frontmatter 模板。
+
+    Returns:
+        Antigravity workflow 格式的 frontmatter 字符串。
+    """
+    return (
+        "---\n"
+        "description: \n"
+        "---\n"
+    )

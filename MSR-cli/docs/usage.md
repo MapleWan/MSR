@@ -213,7 +213,7 @@ msr-sync sync [--ide IDE] [--scope SCOPE] [--project-dir DIR] [--type TYPE] [--n
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `--ide` | 选项（可多次指定） | 否 | 配置文件值或 `all` | 目标 IDE，可选值：`trae`、`qoder`、`lingma`、`codebuddy`、`all` |
+| `--ide` | 选项（可多次指定） | 否 | 配置文件值或 `all` | 目标 IDE，可选值：`trae`、`qoder`、`lingma`、`codebuddy`、`cursor`、`kiro`、`antigravity`、`all` |
 | `--scope` | 选项 | 否 | 配置文件值或 `global` | 同步层级，可选值：`project`（项目级）、`global`（全局级） |
 | `--project-dir` | 路径 | 否 | 当前工作目录 | 项目目录路径，仅在 `--scope project` 时生效 |
 | `--type` | 选项 | 否 | 全部 | 配置类型过滤，可选值：`rules`、`skills`、`mcp` |
@@ -279,7 +279,7 @@ msr-sync sync --type rules --name coding-standards --version V2 --ide trae --sco
 - 从仓库读取 rule 内容，自动剥离原始 frontmatter
 - 根据目标 IDE 添加对应的 frontmatter 模板头部
 - 写入目标 IDE 的 rules 路径
-- 全局级同步时，若目标 IDE 不支持全局 rules（Trae、Qoder、Lingma），会输出警告并跳过
+- 全局级同步时，若目标 IDE 不支持全局 rules（Trae、Qoder、Lingma、Cursor、Antigravity），会输出警告并跳过
 
 各 IDE 的 frontmatter 处理：
 
@@ -289,6 +289,9 @@ msr-sync sync --type rules --name coding-standards --version V2 --ide trae --sco
 | Lingma | 添加 `trigger: always_on` 头部 |
 | Trae | 不添加额外头部，直接写入纯内容 |
 | CodeBuddy | 添加含 `description`、`alwaysApply`、`enabled`、`updatedAt`、`provider` 的头部 |
+| Cursor | 添加含 `description`、`alwaysApply`、`enabled`、`updatedAt`、`provider` 的头部 |
+| Kiro | 不添加额外头部，直接写入纯内容 |
+| Antigravity | 不添加额外头部，直接写入纯内容 |
 
 #### MCP 同步
 
@@ -423,7 +426,7 @@ ignore_patterns:
   - "*.pyc"
 
 # 默认同步目标 IDE 列表
-# 可选值: trae, qoder, lingma, codebuddy, all
+# 可选值: trae, qoder, lingma, codebuddy, cursor, kiro, antigravity, all
 default_ides:
   - trae
   - codebuddy
@@ -512,11 +515,41 @@ default_scope: global
 
 | 配置类型 | 层级 | macOS | Windows |
 |---------|------|-------|---------|
-| Rules | project | `<项目目录>/.codebuddy/rules/` | 同左 |
-| Rules | global | `~/.codebuddy/rules/` | 同左 |
+| Rules | project | `<项目目录>/.codebuddy/rules/<name>.md` | 同左 |
+| Rules | global | `~/.codebuddy/rules/<name>.md` | 同左 |
 | Skills | project | `<项目目录>/.codebuddy/skills/<name>/` | 同左 |
 | Skills | global | `~/.codebuddy/skills/<name>/` | 同左 |
 | MCP | — | `~/.codebuddy/mcp.json` | `~/.codebuddy/mcp.json` |
+
+### Cursor
+
+| 配置类型 | 层级 | macOS | Windows |
+|---------|------|-------|---------|
+| Rules | project | `<项目目录>/.cursor/rules/<name>.md` | 同左 |
+| Rules | global | ❌ 不支持（单文件模型） | ❌ 不支持 |
+| Skills | project | `<项目目录>/.cursor/skills/<name>/` | 同左 |
+| Skills | global | `~/.cursor/skills/<name>/` | 同左 |
+| MCP | — | `~/.cursor/mcp.json` | `~/.cursor/mcp.json` |
+
+### Kiro（AWS）
+
+| 配置类型 | 层级 | macOS | Windows |
+|---------|------|-------|---------|
+| Rules | project | `<项目目录>/.kiro/steering/<name>.md` | 同左 |
+| Rules | global | `~/.kiro/steering/<name>.md` | 同左 |
+| Skills | project | `<项目目录>/.kiro/skills/<name>/` | 同左 |
+| Skills | global | `~/.kiro/skills/<name>/` | 同左 |
+| MCP | — | `~/.kiro/mcp.json` | `~/.kiro/mcp.json` |
+
+### Antigravity（Google）
+
+| 配置类型 | 层级 | macOS | Windows |
+|---------|------|-------|---------|
+| Rules | project | `<项目目录>/.agents/rules/<name>.md` | 同左 |
+| Rules | global | ❌ 不支持（单文件 GEMINI.md） | ❌ 不支持 |
+| Skills | project | `<项目目录>/.agents/workflows/<name>.md` | 同左 |
+| Skills | global | `~/.gemini/workflows/<name>.md` | 同左 |
+| MCP | — | `~/.gemini/antigravity/mcp_config.json` | 同左 |
 
 > **注意：** 在上述路径中，`~` 代表用户主目录，`%APPDATA%` 代表 Windows 的 `AppData\Roaming` 目录。
 
@@ -706,7 +739,7 @@ MSR-cli 目前仅支持 macOS 和 Windows 平台。
 
 #### ⚠️ {ide} 不支持全局级 rules，已跳过
 
-**原因：** Trae、Qoder、Lingma 不支持用户级（全局级）rules 配置。
+**原因：** Trae、Qoder、Lingma、Cursor、Antigravity 不支持用户级（全局级）rules 配置。
 
 **解决方法：**
 
@@ -747,7 +780,7 @@ msr-sync init
 
 **解决方法：**
 
-确认 IDE 名称拼写正确，支持的值为：`trae`、`qoder`、`lingma`、`codebuddy`、`all`。
+确认 IDE 名称拼写正确，支持的值为：`trae`、`qoder`、`lingma`、`codebuddy`、`cursor`、`kiro`、`antigravity`、`all`。
 
 #### ⚠️ 配置文件中的 default_scope 值无效，已使用默认值 'global': {value}
 
