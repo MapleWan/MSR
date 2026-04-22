@@ -321,7 +321,7 @@ ignore_patterns:
   - .git
 
 # 默认同步目标 IDE 列表
-# 可选值: trae, qoder, lingma, codebuddy, all
+# 可选值: trae, qoder, lingma, codebuddy, cursor, all
 # default_ides:
 #   - all
 

@@ -23,6 +23,7 @@ from msr_sync.adapters.qoder import QoderAdapter
 from msr_sync.adapters.lingma import LingmaAdapter
 from msr_sync.adapters.trae import TraeAdapter
 from msr_sync.adapters.codebuddy import CodeBuddyAdapter
+from msr_sync.adapters.cursor import CursorAdapter
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +33,7 @@ from msr_sync.adapters.codebuddy import CodeBuddyAdapter
 # Valid config names: alphanumeric + hyphens, non-empty
 config_name_strategy = st.from_regex(r"[a-z][a-z0-9\-]{0,29}", fullmatch=True)
 
-ide_name_strategy = st.sampled_from(["qoder", "lingma", "trae", "codebuddy"])
+ide_name_strategy = st.sampled_from(["qoder", "lingma", "trae", "codebuddy", "cursor"])
 
 scope_strategy = st.sampled_from(["project", "global"])
 
@@ -52,6 +53,7 @@ def _expected_rules_path(
         "lingma": ".lingma",
         "trae": ".trae",
         "codebuddy": ".codebuddy",
+        "cursor": ".cursor",
     }
     dot_dir = ide_dot_dirs[ide]
     if scope == "project":
@@ -70,6 +72,7 @@ def _expected_skills_path(
             "lingma": ".lingma",
             "trae": ".trae",
             "codebuddy": ".codebuddy",
+            "cursor": ".cursor",
         }
         return project_dir / ide_dot_dirs[ide] / "skills" / name
     else:
@@ -79,6 +82,7 @@ def _expected_skills_path(
             "lingma": ".lingma",
             "trae": ".trae-cn",       # Trae uses .trae-cn for global
             "codebuddy": ".codebuddy",
+            "cursor": ".cursor",
         }
         return home / global_skills_dirs[ide] / "skills" / name
 
@@ -176,6 +180,7 @@ def _create_fresh_adapter(ide_name: str) -> BaseAdapter:
         "lingma": LingmaAdapter,
         "trae": TraeAdapter,
         "codebuddy": CodeBuddyAdapter,
+        "cursor": CursorAdapter,
     }
     return adapters[ide_name]()
 
@@ -187,13 +192,13 @@ def _create_fresh_adapter(ide_name: str) -> BaseAdapter:
 class TestAllAdaptersAreBaseAdapter:
     """所有适配器应为 BaseAdapter 的实例"""
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy"])
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
     def test_adapter_is_base_adapter_instance(self, ide_name):
         """每个注册的适配器都应是 BaseAdapter 的子类实例"""
         adapter = get_adapter(ide_name)
         assert isinstance(adapter, BaseAdapter)
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy"])
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
     def test_adapter_ide_name_matches(self, ide_name):
         """适配器的 ide_name 属性应与注册名一致"""
         adapter = get_adapter(ide_name)
@@ -203,12 +208,12 @@ class TestAllAdaptersAreBaseAdapter:
 class TestResolveIdeList:
     """测试 resolve_ide_list 对 'all' 的展开和单个 IDE 的解析"""
 
-    def test_all_expands_to_four_adapters(self):
-        """'all' 应展开为所有 4 个适配器"""
+    def test_all_expands_to_five_adapters(self):
+        """'all' 应展开为所有 5 个适配器"""
         adapters = resolve_ide_list(("all",))
-        assert len(adapters) == 4
+        assert len(adapters) == 5
         names = {a.ide_name for a in adapters}
-        assert names == {"qoder", "lingma", "trae", "codebuddy"}
+        assert names == {"qoder", "lingma", "trae", "codebuddy", "cursor"}
 
     def test_single_ide(self):
         """单个 IDE 名称应返回对应的适配器"""
@@ -218,15 +223,15 @@ class TestResolveIdeList:
 
     def test_multiple_ides(self):
         """多个 IDE 名称应返回对应的适配器列表"""
-        adapters = resolve_ide_list(("qoder", "codebuddy"))
-        assert len(adapters) == 2
+        adapters = resolve_ide_list(("qoder", "codebuddy", "cursor"))
+        assert len(adapters) == 3
         names = {a.ide_name for a in adapters}
-        assert names == {"qoder", "codebuddy"}
+        assert names == {"qoder", "codebuddy", "cursor"}
 
     def test_all_overrides_individual(self):
         """包含 'all' 时应忽略其他个别 IDE 名称，返回全部"""
         adapters = resolve_ide_list(("trae", "all"))
-        assert len(adapters) == 4
+        assert len(adapters) == 5
 
     def test_invalid_ide_raises(self):
         """不支持的 IDE 名称应抛出 ValueError"""
@@ -247,6 +252,7 @@ class TestSupportsGlobalRules:
             ("lingma", False),
             ("trae", False),
             ("codebuddy", True),
+            ("cursor", False),
         ],
     )
     def test_supports_global_rules(self, ide_name, expected):
@@ -268,6 +274,7 @@ class TestRulesPathProjectScope:
             ("lingma", ".lingma"),
             ("trae", ".trae"),
             ("codebuddy", ".codebuddy"),
+            ("cursor", ".cursor"),
         ],
     )
     def test_project_rules_path(self, ide_name, dot_dir):
@@ -291,6 +298,7 @@ class TestRulesPathGlobalScope:
             ("lingma", ".lingma"),
             ("trae", ".trae"),
             ("codebuddy", ".codebuddy"),
+            ("cursor", ".cursor"),
         ],
     )
     def test_global_rules_path(self, ide_name, dot_dir):
@@ -318,6 +326,7 @@ class TestSkillsPathProjectScope:
             ("lingma", ".lingma"),
             ("trae", ".trae"),
             ("codebuddy", ".codebuddy"),
+            ("cursor", ".cursor"),
         ],
     )
     def test_project_skills_path(self, ide_name, dot_dir):
@@ -341,6 +350,7 @@ class TestSkillsPathGlobalScope:
             ("lingma", ".lingma"),
             ("trae", ".trae-cn"),       # Trae 全局 skills 使用 .trae-cn
             ("codebuddy", ".codebuddy"),
+            ("cursor", ".cursor"),
         ],
     )
     def test_global_skills_path(self, ide_name, global_dot_dir):
@@ -392,6 +402,17 @@ class TestMcpPathMacOS:
             path = adapter.get_mcp_path()
             assert path == home / ".codebuddy" / "mcp.json"
 
+    def test_cursor_macos_mcp_path(self):
+        """Cursor macOS MCP 路径: ~/.cursor/mcp.json"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("cursor")
+            path = adapter.get_mcp_path()
+            assert path == home / ".cursor" / "mcp.json"
+
 
 class TestMcpPathWindows:
     """测试各 IDE 在 Windows 上的 MCP 路径解析
@@ -429,6 +450,17 @@ class TestMcpPathWindows:
             adapter = _create_fresh_adapter("codebuddy")
             path = adapter.get_mcp_path()
             assert path == home / ".codebuddy" / "mcp.json"
+
+    def test_cursor_windows_mcp_path(self):
+        """Cursor Windows MCP 路径: ~/.cursor/mcp.json (跨平台统一)"""
+        home = Path("/mock/home")
+        with patch(
+            "msr_sync.core.platform.PlatformInfo.get_home",
+            return_value=home,
+        ):
+            adapter = _create_fresh_adapter("cursor")
+            path = adapter.get_mcp_path()
+            assert path == home / ".cursor" / "mcp.json"
 
 
 class TestFormatRuleContent:
@@ -469,7 +501,18 @@ class TestFormatRuleContent:
         assert "provider:" in result
         assert result.endswith("# Rule\nContent")
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy"])
+    def test_cursor_adds_cursor_header(self):
+        """Cursor: 添加含时间戳的 frontmatter 头部"""
+        adapter = _create_fresh_adapter("cursor")
+        result = adapter.format_rule_content("# Rule\nContent")
+        assert result.startswith("---\n")
+        assert "alwaysApply: true" in result
+        assert "enabled: true" in result
+        assert "updatedAt:" in result
+        assert "provider:" in result
+        assert result.endswith("# Rule\nContent")
+
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
     def test_format_preserves_content(self, ide_name):
         """所有适配器的 format_rule_content 应保留原始内容"""
         adapter = _create_fresh_adapter(ide_name)
@@ -477,7 +520,7 @@ class TestFormatRuleContent:
         result = adapter.format_rule_content(content)
         assert result.endswith(content)
 
-    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy"])
+    @pytest.mark.parametrize("ide_name", ["qoder", "lingma", "trae", "codebuddy", "cursor"])
     def test_format_empty_content(self, ide_name):
         """所有适配器应能处理空内容"""
         adapter = _create_fresh_adapter(ide_name)
