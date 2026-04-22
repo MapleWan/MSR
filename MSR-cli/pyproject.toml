@@ -9,7 +9,7 @@ authors = [
 urls = {Homepage = "https://github.com/MapleWan/MSR/tree/main", Repository = "https://github.com/MapleWan/MSR/tree/main"}
 
 name = "msr-sync"
-version = "0.1.0"
+version = "0.1.2"
 description = "统一管理多款 AI IDE 的 rules、skills、MCP 配置"
 readme = "README.md"
 requires-python = ">=3.9"

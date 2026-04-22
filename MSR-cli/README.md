@@ -1,10 +1,14 @@
 # MSR-cli (`msr-sync`)
 
-统一管理多款国内 AI IDE 的 rules、skills、MCP 配置的轻量化命令行工具。
+> **告别 AI IDE 配置碎片化：用 MSR-cli 打造你的本地 MCP / Rules / Skills 统一仓库。**
+>
+> 你是否在不同 AI IDE 之间反复拷贝同一份 Rule？是否想把自己精心调试的 MCP 配置集中管理、按需分发？MSR-cli 就是为此而生 —— 它首先是你本地的 AI 配置仓库管理工具，其次才是跨 IDE 一键同步的桥梁。
+
+统一管理多款 AI IDE 的 rules、skills、MCP 配置的轻量化命令行工具。
 
 ## 为什么需要 MSR-cli？
 
-随着国内 AI IDE 生态的快速发展，开发者往往需要在多款 AI IDE（如 Trae、Qoder、Lingma、CodeBuddy）之间切换使用。然而，这些 IDE 的配置体系存在以下痛点：
+随着 AI IDE 生态的快速发展，开发者往往需要在多款 AI IDE（如 Trae、Qoder、Lingma、CodeBuddy、Cursor、Kiro、Antigravity）之间切换使用。然而，这些 IDE 的配置体系存在以下痛点：
 
 - **配置相互隔离**：每个 IDE 都有独立的 rules、skills、MCP 配置目录，互不相通。在一个 IDE 中精心调试好的配置，无法直接用于另一个 IDE。
 - **跨 IDE 迁移成本高**：不同 IDE 的配置路径、文件格式、frontmatter 规范各不相同，手动迁移需要逐一理解每个 IDE 的约定，极易出错。
@@ -124,6 +128,9 @@ MSR-cli 是一个基于 Python 开发的命令行工具，命令名为 `msr-sync
 | **Qoder** | 阿里巴巴 | ✅ | ✅ | ✅ |
 | **Lingma** | 阿里巴巴 | ✅ | ✅ | ✅ |
 | **CodeBuddy** | 腾讯 | ✅ | ✅ | ✅ |
+| **Cursor** | Cursor Inc. | ✅ | ✅ | ✅ |
+| **Kiro** | AWS | ✅ | ✅ | ✅ |
+| **Antigravity** | Google | ✅ | ✅ | ✅ |
 
 ## 支持的平台
 
