@@ -142,3 +142,22 @@ def build_codebuddy_header() -> str:
         "provider: \n"
         "---\n"
     )
+
+
+def build_cursor_header() -> str:
+    """生成 Cursor 的 frontmatter 模板（含当前时间戳）。
+
+    Returns:
+        Cursor 格式的 frontmatter 字符串，``updatedAt`` 字段为当前 UTC 时间的
+        ISO 8601 格式时间戳。
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    return (
+        "---\n"
+        "description: \n"
+        "alwaysApply: true\n"
+        "enabled: true\n"
+        f"updatedAt: {timestamp}\n"
+        "provider: \n"
+        "---\n"
+    )

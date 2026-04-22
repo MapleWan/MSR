@@ -43,7 +43,7 @@ def import_config(config_type, source):
     "--ide",
     multiple=True,
     default=None,
-    type=click.Choice(["trae", "qoder", "lingma", "codebuddy", "all"]),
+    type=click.Choice(["trae", "qoder", "lingma", "codebuddy", "cursor", "all"]),
 )
 @click.option("--scope", default=None, type=click.Choice(["project", "global"]))
 @click.option("--project-dir", default=None, type=click.Path())

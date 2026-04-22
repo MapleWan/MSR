@@ -164,6 +164,7 @@ class TestSyncCommand:
         assert "qoder" in result.output
         assert "lingma" in result.output
         assert "codebuddy" in result.output
+        assert "cursor" in result.output
         assert "all" in result.output
         # Req 8.2: --scope 参数
         assert "--scope" in result.output
