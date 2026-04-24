@@ -4,7 +4,7 @@
 
 ## 先聊聊一个被忽视的问题
 
-作为经常在 Trae、Qoder、Lingma、CodeBuddy 之间切换的开发者，你可能已经积累了：
+作为经常在 Trae、Qoder、Lingma、CodeBuddy、Cursor、Kiro、Antigravity 之间切换的开发者，你可能已经积累了：
 
 - 十几条精心编写的 **Rules**（代码规范、架构约束、Git 提交规范...）
 - 几个好用的 **Skills**（Code Review、文档生成、性能优化...）
@@ -24,6 +24,15 @@
 # CodeBuddy 又在另一个路径
 .codebuddy/rules/coding-standards.md
 ~/.codebuddy/rules/coding-standards.md    # CodeBuddy 还支持全局级
+
+# Cursor 使用 .cursor 目录
+.cursor/rules/coding-standards.md
+
+# Kiro 使用 steering 文件
+.kiro/steering/coding-standards.md
+
+# Antigravity 使用 .agents 目录
+.agents/rules/coding-standards.md
 ```
 
 **更关键的是**：每个 IDE 的格式要求还不一样：
@@ -31,11 +40,12 @@
 | IDE | Rules frontmatter 格式 | 说明 |
 |-----|----------------------|------|
 | Trae | 无头部 | 直接是纯 Markdown |
-| Qoder | `trigger: always_on` | YAML 格式包裹 |
-| Lingma | `trigger: always_on` | 与 Qoder 相同 |
-| CodeBuddy | 5 个字段（含时间戳） | 最复杂，每次同步动态生成 |
+| Qoder / Lingma | `trigger: always_on` | YAML 格式包裹 |
+| CodeBuddy / Cursor | 5 个字段（含时间戳） | 最复杂，每次同步动态生成 |
+| Kiro | 无头部 | 同 Trae，纯 Markdown |
+| Antigravity | `description` 字段 | 简化的 YAML 头部 |
 
-同一条 Rule，在 4 个 IDE 里需要 4 种不同的格式。手动维护？不存在的。
+同一条 Rule，在 7 个 IDE 里需要 5 种不同的格式。手动维护？不存在的。
 
 ## MSR-cli：你的本地 AI 配置仓库
 
@@ -100,13 +110,13 @@ msr-sync init --merge
 #
 # 🔍 正在扫描已有 IDE 配置...
 #
-# 📊 合并摘要（共导入 5 项配置）:
-#   rules: trae: 2 项, codebuddy: 1 项
-#   skills: qoder: 1 项
-#   mcp: lingma: 1 项
+# 📊 合并摘要（共导入 8 项配置）:
+#   rules: trae: 2 项, codebuddy: 1 项, cursor: 1 项
+#   skills: qoder: 1 项, kiro: 1 项
+#   mcp: lingma: 1 项, antigravity: 1 项
 ```
 
-它会自动扫描 Trae、Qoder、Lingma、CodeBuddy 四个 IDE 的用户级目录，把你已有的配置全部导入统一仓库。
+它会自动扫描 Trae、Qoder、Lingma、CodeBuddy、Cursor、Kiro、Antigravity 七个 IDE 的用户级目录，把你已有的配置全部导入统一仓库。
 
 ### 第二步：导入你的配置
 
@@ -146,7 +156,9 @@ msr-sync sync
 # ✅ 已同步 rule 'coding-standards' (V2) 到 qoder (global)
 # ✅ 已同步 rule 'coding-standards' (V2) 到 lingma (global)
 # ✅ 已同步 rule 'coding-standards' (V2) 到 codebuddy (global)
-# ...
+# ✅ 已同步 rule 'coding-standards' (V2) 到 cursor (global)
+# ✅ 已同步 rule 'coding-standards' (V2) 到 kiro (global)
+# ✅ 已同步 rule 'coding-standards' (V2) 到 antigravity (global)
 ```
 
 也可以精确控制同步范围：
@@ -234,7 +246,7 @@ trigger: always_on
 ...
 ```
 
-**CodeBuddy** — 自动添加包含时间戳的完整头部：
+**CodeBuddy / Cursor** — 自动添加包含时间戳的完整头部：
 
 ```markdown
 ---
@@ -243,6 +255,31 @@ alwaysApply: true
 enabled: true
 updatedAt: 2026-04-21T08:38:00.123456+00:00
 provider:
+---
+# 编码规范
+
+## 命名规则
+- 类名使用 PascalCase
+- 函数名使用 camelCase
+...
+```
+
+**Kiro** — 同 Trae，直接写入纯 Markdown，无头部：
+
+```markdown
+# 编码规范
+
+## 命名规则
+- 类名使用 PascalCase
+- 函数名使用 camelCase
+...
+```
+
+**Antigravity** — 自动添加简化的 `description` 头部：
+
+```markdown
+---
+description:
 ---
 # 编码规范
 
@@ -326,6 +363,9 @@ class TraeAdapter(BaseAdapter): ...
 class QoderAdapter(BaseAdapter): ...
 class LingmaAdapter(BaseAdapter): ...
 class CodeBuddyAdapter(BaseAdapter): ...
+class CursorAdapter(BaseAdapter): ...
+class KiroAdapter(BaseAdapter): ...
+class AntigravityAdapter(BaseAdapter): ...
 ```
 
 新增一个 IDE 的支持，只需要：
@@ -393,7 +433,7 @@ msr-sync sync --type rules --scope project
 msr-sync sync --type skills --scope project
 ```
 
-配置会自动写入 `.trae/rules/`、`.qoder/rules/`、`.codebuddy/rules/` 等目录，团队成员各自用各自的 IDE 打开项目就能直接生效。
+配置会自动写入 `.trae/rules/`、`.qoder/rules/`、`.codebuddy/rules/`、`.cursor/rules/`、`.kiro/steering/`、`.agents/rules/` 等目录，团队成员各自用各自的 IDE 打开项目就能直接生效。
 
 ## 支持的 IDE 和平台
 
@@ -403,6 +443,9 @@ msr-sync sync --type skills --scope project
 | Qoder | 阿里巴巴 | ✅ | ✅ | ✅ |
 | Lingma | 阿里巴巴 | ✅ | ✅ | ✅ |
 | CodeBuddy | 腾讯 | ✅ | ✅ | ✅ |
+| Cursor | Cursor Inc. | ✅ | ✅ | ✅ |
+| Kiro | AWS | ✅ | ✅ | ✅ |
+| Antigravity | Google | ✅ | ✅ | ✅ |
 
 - **macOS** / **Windows** 双平台支持，自动检测操作系统并使用对应路径规范
 - Python 3.9+ 环境，仅依赖 `click` 和 `pyyaml`，轻量无负担
