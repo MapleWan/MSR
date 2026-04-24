@@ -8,12 +8,16 @@
 - [MSR-cli/msr_sync/adapters/qoder.py](file://MSR-cli/msr_sync/adapters/qoder.py)
 - [MSR-cli/msr_sync/adapters/lingma.py](file://MSR-cli/msr_sync/adapters/lingma.py)
 - [MSR-cli/msr_sync/adapters/trae.py](file://MSR-cli/msr_sync/adapters/trae.py)
+- [MSR-cli/msr_sync/adapters/kiro.py](file://MSR-cli/msr_sync/adapters/kiro.py)
+- [MSR-cli/msr_sync/adapters/antigravity.py](file://MSR-cli/msr_sync/adapters/antigravity.py)
 - [MSR-cli/msr_sync/core/platform.py](file://MSR-cli/msr_sync/core/platform.py)
 - [MSR-cli/msr_sync/core/frontmatter.py](file://MSR-cli/msr_sync/core/frontmatter.py)
 - [MSR-cli/msr_sync/commands/sync_cmd.py](file://MSR-cli/msr_sync/commands/sync_cmd.py)
 - [MSR-cli/msr_sync/commands/init_cmd.py](file://MSR-cli/msr_sync/commands/init_cmd.py)
 - [MSR-cli/msr_sync/cli.py](file://MSR-cli/msr_sync/cli.py)
 - [MSR-cli/tests/test_adapters.py](file://MSR-cli/tests/test_adapters.py)
+- [MSR-cli/tests/test_kiro_adapter.py](file://MSR-cli/tests/test_kiro_adapter.py)
+- [MSR-cli/tests/test_antigravity_adapter.py](file://MSR-cli/tests/test_antigravity_adapter.py)
 - [MSR-cli/pyproject.toml](file://MSR-cli/pyproject.toml)
 </cite>
 
@@ -30,10 +34,10 @@
 10. [附录](#附录)
 
 ## 简介
-本文件面向开发者与使用者，系统化阐述“IDE适配器”体系的设计与实现，涵盖适配器架构、适配器模式的应用、四个具体适配器（CodeBuddy、Qoder、Lingma、Trae）的差异化处理机制、注册与管理机制、扩展新IDE支持的方法、跨平台适配的挑战与方案，以及开发与定制的最佳实践。文档同时提供关键流程的时序图与类图，帮助读者快速把握系统全貌。
+本文件面向开发者与使用者，系统化阐述"IDE适配器"体系的设计与实现，涵盖适配器架构、适配器模式的应用、六个具体适配器（CodeBuddy、Qoder、Lingma、Trae、Kiro、Antigravity）的差异化处理机制、注册与管理机制、扩展新IDE支持的方法、跨平台适配的挑战与方案，以及开发与定制的最佳实践。文档同时提供关键流程的时序图与类图，帮助读者快速把握系统全貌。
 
 ## 项目结构
-MSR-sync 的 CLI 子系统围绕“统一仓库 + 适配器”的架构组织，核心目录与职责如下：
+MSR-sync 的 CLI 子系统围绕"统一仓库 + 适配器"的架构组织，核心目录与职责如下：
 - msr_sync/adapters：适配器抽象与具体实现，以及注册表
 - msr_sync/core：平台检测、frontmatter解析/生成、仓库访问等通用能力
 - msr_sync/commands：CLI 命令处理器（init、sync、list、remove、import）
@@ -56,6 +60,8 @@ CB["adapters/codebuddy.py"]
 QD["adapters/qoder.py"]
 LM["adapters/lingma.py"]
 TR["adapters/trae.py"]
+KI["adapters/kiro.py"]
+AG["adapters/antigravity.py"]
 end
 subgraph "核心能力"
 FM["core/frontmatter.py<br/>frontmatter解析/生成"]
@@ -70,49 +76,53 @@ BASE --> CB
 BASE --> QD
 BASE --> LM
 BASE --> TR
+BASE --> KI
+BASE --> AG
 SYNC --> FM
 SYNC --> PL
 INIT --> PL
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/cli.py:1-116](file://MSR-cli/msr_sync/cli.py#L1-L116)
 - [MSR-cli/msr_sync/commands/init_cmd.py:1-137](file://MSR-cli/msr_sync/commands/init_cmd.py#L1-L137)
 - [MSR-cli/msr_sync/commands/sync_cmd.py:1-411](file://MSR-cli/msr_sync/commands/sync_cmd.py#L1-L411)
 - [MSR-cli/msr_sync/adapters/base.py:1-105](file://MSR-cli/msr_sync/adapters/base.py#L1-L105)
-- [MSR-cli/msr_sync/adapters/registry.py:1-88](file://MSR-cli/msr_sync/adapters/registry.py#L1-L88)
+- [MSR-cli/msr_sync/adapters/registry.py:1-91](file://MSR-cli/msr_sync/adapters/registry.py#L1-L91)
 - [MSR-cli/msr_sync/adapters/codebuddy.py:1-143](file://MSR-cli/msr_sync/adapters/codebuddy.py#L1-L143)
 - [MSR-cli/msr_sync/adapters/qoder.py:1-140](file://MSR-cli/msr_sync/adapters/qoder.py#L1-L140)
 - [MSR-cli/msr_sync/adapters/lingma.py:1-140](file://MSR-cli/msr_sync/adapters/lingma.py#L1-L140)
 - [MSR-cli/msr_sync/adapters/trae.py:1-138](file://MSR-cli/msr_sync/adapters/trae.py#L1-L138)
-- [MSR-cli/msr_sync/core/frontmatter.py:1-145](file://MSR-cli/msr_sync/core/frontmatter.py#L1-L145)
+- [MSR-cli/msr_sync/adapters/kiro.py:1-133](file://MSR-cli/msr_sync/adapters/kiro.py#L1-L133)
+- [MSR-cli/msr_sync/adapters/antigravity.py:1-131](file://MSR-cli/msr_sync/adapters/antigravity.py#L1-L131)
 - [MSR-cli/msr_sync/core/platform.py:1-60](file://MSR-cli/msr_sync/core/platform.py#L1-L60)
+- [MSR-cli/msr_sync/core/frontmatter.py:1-177](file://MSR-cli/msr_sync/core/frontmatter.py#L1-L177)
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/cli.py:1-116](file://MSR-cli/msr_sync/cli.py#L1-L116)
 - [MSR-cli/msr_sync/commands/init_cmd.py:1-137](file://MSR-cli/msr_sync/commands/init_cmd.py#L1-L137)
 - [MSR-cli/msr_sync/commands/sync_cmd.py:1-411](file://MSR-cli/msr_sync/commands/sync_cmd.py#L1-L411)
 - [MSR-cli/msr_sync/adapters/base.py:1-105](file://MSR-cli/msr_sync/adapters/base.py#L1-L105)
-- [MSR-cli/msr_sync/adapters/registry.py:1-88](file://MSR-cli/msr_sync/adapters/registry.py#L1-L88)
+- [MSR-cli/msr_sync/adapters/registry.py:1-91](file://MSR-cli/msr_sync/adapters/registry.py#L1-L91)
 - [MSR-cli/msr_sync/core/platform.py:1-60](file://MSR-cli/msr_sync/core/platform.py#L1-L60)
-- [MSR-cli/msr_sync/core/frontmatter.py:1-145](file://MSR-cli/msr_sync/core/frontmatter.py#L1-L145)
+- [MSR-cli/msr_sync/core/frontmatter.py:1-177](file://MSR-cli/msr_sync/core/frontmatter.py#L1-L177)
 
 ## 核心组件
 - 适配器抽象基类 BaseAdapter：定义统一接口，包括路径解析、格式转换、能力查询、配置扫描等，确保不同IDE的一致行为契约。
-- 注册表 Registry：集中管理适配器类的延迟加载与实例缓存，支持按名称解析与“all”展开。
-- 具体适配器：CodeBuddy、Qoder、Lingma、Trae，分别实现各自的路径约定、格式头部、能力与扫描策略。
+- 注册表 Registry：集中管理适配器类的延迟加载与实例缓存，支持按名称解析与"all"展开。
+- 具体适配器：CodeBuddy、Qoder、Lingma、Trae、Kiro、Antigravity，分别实现各自的路径约定、格式头部、能力与扫描策略。
 - 平台能力 PlatformInfo：提供跨平台的用户主目录、应用数据目录等路径解析。
 - frontmatter工具：剥离/解析/生成YAML frontmatter，支撑规则内容的统一与IDE特定头部注入。
 - 命令处理器：init 与 sync 的业务编排，驱动仓库与适配器交互。
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/base.py:8-105](file://MSR-cli/msr_sync/adapters/base.py#L8-L105)
-- [MSR-cli/msr_sync/adapters/registry.py:8-88](file://MSR-cli/msr_sync/adapters/registry.py#L8-L88)
+- [MSR-cli/msr_sync/adapters/registry.py:8-91](file://MSR-cli/msr_sync/adapters/registry.py#L8-L91)
 - [MSR-cli/msr_sync/core/platform.py:9-60](file://MSR-cli/msr_sync/core/platform.py#L9-L60)
-- [MSR-cli/msr_sync/core/frontmatter.py:10-145](file://MSR-cli/msr_sync/core/frontmatter.py#L10-L145)
+- [MSR-cli/msr_sync/core/frontmatter.py:10-177](file://MSR-cli/msr_sync/core/frontmatter.py#L10-L177)
 
 ## 架构总览
-适配器模式在此处体现为“同一抽象 + 多种实现”，通过统一接口屏蔽IDE差异，使上层命令处理器无需关心具体IDE细节。注册表负责生命周期管理与延迟加载，避免不必要的模块导入；平台与frontmatter模块提供跨平台与内容处理的基础设施。
+适配器模式在此处体现为"同一抽象 + 多种实现"，通过统一接口屏蔽IDE差异，使上层命令处理器无需关心具体IDE细节。注册表负责生命周期管理与延迟加载，避免不必要的模块导入；平台与frontmatter模块提供跨平台与内容处理的基础设施。
 
 ```mermaid
 classDiagram
@@ -129,6 +139,8 @@ class CodeBuddyAdapter
 class QoderAdapter
 class LingmaAdapter
 class TraeAdapter
+class KiroAdapter
+class AntigravityAdapter
 class Registry {
 +get_adapter(ide_name) BaseAdapter
 +get_all_adapters() List[BaseAdapter]
@@ -145,30 +157,33 @@ class Frontmatter {
 +build_qoder_header() str
 +build_lingma_header() str
 +build_codebuddy_header() str
++build_cursor_header() str
++build_antigravity_header() str
 }
 BaseAdapter <|-- CodeBuddyAdapter
 BaseAdapter <|-- QoderAdapter
 BaseAdapter <|-- LingmaAdapter
 BaseAdapter <|-- TraeAdapter
+BaseAdapter <|-- KiroAdapter
+BaseAdapter <|-- AntigravityAdapter
 Registry --> BaseAdapter : "实例化"
-CodeBuddyAdapter --> PlatformInfo : "路径解析"
-QoderAdapter --> PlatformInfo : "路径解析"
-LingmaAdapter --> PlatformInfo : "路径解析"
-TraeAdapter --> PlatformInfo : "路径解析"
-CodeBuddyAdapter --> Frontmatter : "头部生成"
-QoderAdapter --> Frontmatter : "头部生成"
-LingmaAdapter --> Frontmatter : "头部生成"
+KiroAdapter --> PlatformInfo : "路径解析"
+AntigravityAdapter --> PlatformInfo : "路径解析"
+KiroAdapter --> Frontmatter : "头部生成"
+AntigravityAdapter --> Frontmatter : "头部生成"
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/adapters/base.py:8-105](file://MSR-cli/msr_sync/adapters/base.py#L8-L105)
 - [MSR-cli/msr_sync/adapters/codebuddy.py:22-143](file://MSR-cli/msr_sync/adapters/codebuddy.py#L22-L143)
 - [MSR-cli/msr_sync/adapters/qoder.py:22-140](file://MSR-cli/msr_sync/adapters/qoder.py#L22-L140)
 - [MSR-cli/msr_sync/adapters/lingma.py:22-140](file://MSR-cli/msr_sync/adapters/lingma.py#L22-L140)
 - [MSR-cli/msr_sync/adapters/trae.py:21-138](file://MSR-cli/msr_sync/adapters/trae.py#L21-L138)
-- [MSR-cli/msr_sync/adapters/registry.py:45-88](file://MSR-cli/msr_sync/adapters/registry.py#L45-L88)
+- [MSR-cli/msr_sync/adapters/kiro.py:21-133](file://MSR-cli/msr_sync/adapters/kiro.py#L21-L133)
+- [MSR-cli/msr_sync/adapters/antigravity.py:22-131](file://MSR-cli/msr_sync/adapters/antigravity.py#L22-L131)
+- [MSR-cli/msr_sync/adapters/registry.py:45-91](file://MSR-cli/msr_sync/adapters/registry.py#L45-L91)
 - [MSR-cli/msr_sync/core/platform.py:9-60](file://MSR-cli/msr_sync/core/platform.py#L9-L60)
-- [MSR-cli/msr_sync/core/frontmatter.py:110-145](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L145)
+- [MSR-cli/msr_sync/core/frontmatter.py:110-177](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L177)
 
 ## 详细组件分析
 
@@ -181,11 +196,11 @@ LingmaAdapter --> Frontmatter : "头部生成"
 - Registry 提供：
   - 延迟加载：按需导入模块，避免启动时的开销
   - 实例缓存：避免重复构造
-  - resolve_ide_list：支持“all”展开与去重
+  - resolve_ide_list：支持"all"展开与去重
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/base.py:8-105](file://MSR-cli/msr_sync/adapters/base.py#L8-L105)
-- [MSR-cli/msr_sync/adapters/registry.py:8-88](file://MSR-cli/msr_sync/adapters/registry.py#L8-L88)
+- [MSR-cli/msr_sync/adapters/registry.py:8-91](file://MSR-cli/msr_sync/adapters/registry.py#L8-L91)
 
 ### CodeBuddy 适配器
 - 能力与路径
@@ -197,7 +212,7 @@ LingmaAdapter --> Frontmatter : "头部生成"
 - 配置扫描
   - 扫描用户级 rules、skills 与 MCP 文件
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/codebuddy.py:1-143](file://MSR-cli/msr_sync/adapters/codebuddy.py#L1-L143)
 - [MSR-cli/msr_sync/core/frontmatter.py:128-145](file://MSR-cli/msr_sync/core/frontmatter.py#L128-L145)
 
@@ -210,7 +225,7 @@ LingmaAdapter --> Frontmatter : "头部生成"
 - 配置扫描
   - 扫描用户级 skills 与 MCP 文件（平台不支持时忽略异常）
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/qoder.py:1-140](file://MSR-cli/msr_sync/adapters/qoder.py#L1-L140)
 - [MSR-cli/msr_sync/core/frontmatter.py:110-117](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L117)
 
@@ -223,7 +238,7 @@ LingmaAdapter --> Frontmatter : "头部生成"
 - 配置扫描
   - 扫描用户级 skills 与 MCP 文件（平台不支持时忽略异常）
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/lingma.py:1-140](file://MSR-cli/msr_sync/adapters/lingma.py#L1-L140)
 - [MSR-cli/msr_sync/core/frontmatter.py:119-126](file://MSR-cli/msr_sync/core/frontmatter.py#L119-L126)
 
@@ -237,13 +252,37 @@ LingmaAdapter --> Frontmatter : "头部生成"
 - 配置扫描
   - 扫描用户级 skills（.trae-cn）与 MCP 文件（平台不支持时忽略异常）
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/trae.py:1-138](file://MSR-cli/msr_sync/adapters/trae.py#L1-L138)
+
+### Kiro 适配器
+- 能力与路径
+  - 支持全局级 rules（steering）
+  - 路径约定：项目级 rules/skills 位于 .kiro/steering/ 与 .kiro/skills/；用户级 rules/skills 位于 ~/.kiro/steering/ 与 ~/.kiro/skills/；MCP 路径在 macOS/Windows 上统一为 ~/.kiro/mcp.json
+- 格式转换
+  - 不添加额外头部，直接返回原始内容
+- 配置扫描
+  - 扫描用户级 rules（~/.kiro/steering/）、skills（~/.kiro/skills/）与 MCP 文件
+
+**章节来源**
+- [MSR-cli/msr_sync/adapters/kiro.py:1-133](file://MSR-cli/msr_sync/adapters/kiro.py#L1-L133)
+
+### Antigravity 适配器
+- 能力与路径
+  - 不支持全局级 rules（全局 rules 为单文件 GEMINI.md，与 MSR 多文件模型不兼容）
+  - 路径约定：项目级 rules 位于 .agents/rules/；用户级 rules 为单文件 GEMINI.md（不扫描）；项目级 skills 对应 workflows 位于 .agents/workflows/；用户级 skills 对应 workflows 位于 ~/.gemini/workflows/；MCP 路径为 ~/.gemini/antigravity/mcp_config.json
+- 格式转换
+  - 不添加额外头部，直接返回原始内容
+- 配置扫描
+  - 不扫描用户级 rules（Antigravity 不支持全局级多文件 rules），仅扫描用户级 skills（~/.gemini/workflows/）与 MCP 文件
+
+**章节来源**
+- [MSR-cli/msr_sync/adapters/antigravity.py:1-131](file://MSR-cli/msr_sync/adapters/antigravity.py#L1-L131)
 
 ### 同步流程（sync 命令）
 - 输入参数：--ide、--scope、--project-dir、--type、--name、--version
 - 流程要点：
-  - 解析目标 IDE 列表（支持“all”）
+  - 解析目标 IDE 列表（支持"all"）
   - 读取统一仓库配置清单，按类型/名称/版本过滤
   - 对每条配置：
     - 规则：剥离frontmatter，按IDE头部模板格式化，写入目标路径
@@ -261,10 +300,10 @@ participant AD as "BaseAdapter/具体适配器"
 participant REPO as "Repository"
 participant FM as "Frontmatter"
 participant FS as "文件系统"
-U->>CLI : "msr-sync sync --ide trae --scope project"
+U->>CLI : "msr-sync sync --ide kiro --scope project"
 CLI->>CMD : "sync_handler(...)"
-CMD->>REG : "resolve_ide_list(('trae',))"
-REG-->>CMD : "[TraeAdapter]"
+CMD->>REG : "resolve_ide_list(('kiro',))"
+REG-->>CMD : "[KiroAdapter]"
 CMD->>REPO : "list_configs()/read_*"
 REPO-->>CMD : "配置清单/内容"
 CMD->>AD : "supports_global_rules()"
@@ -282,13 +321,13 @@ FS-->>CMD : "成功"
 CMD-->>U : "同步结果汇总"
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/cli.py:58-82](file://MSR-cli/msr_sync/cli.py#L58-L82)
 - [MSR-cli/msr_sync/commands/sync_cmd.py:26-131](file://MSR-cli/msr_sync/commands/sync_cmd.py#L26-L131)
-- [MSR-cli/msr_sync/adapters/registry.py:74-88](file://MSR-cli/msr_sync/adapters/registry.py#L74-L88)
+- [MSR-cli/msr_sync/adapters/registry.py:74-91](file://MSR-cli/msr_sync/adapters/registry.py#L74-L91)
 - [MSR-cli/msr_sync/core/frontmatter.py:10-24](file://MSR-cli/msr_sync/core/frontmatter.py#L10-L24)
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/commands/sync_cmd.py:26-411](file://MSR-cli/msr_sync/commands/sync_cmd.py#L26-L411)
 - [MSR-cli/msr_sync/cli.py:58-82](file://MSR-cli/msr_sync/cli.py#L58-L82)
 
@@ -315,11 +354,11 @@ ImportMCP --> Summary
 Summary --> End
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/commands/init_cmd.py:13-137](file://MSR-cli/msr_sync/commands/init_cmd.py#L13-L137)
 - [MSR-cli/msr_sync/adapters/registry.py:65-72](file://MSR-cli/msr_sync/adapters/registry.py#L65-L72)
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/commands/init_cmd.py:13-137](file://MSR-cli/msr_sync/commands/init_cmd.py#L13-L137)
 
 ### 跨平台适配的挑战与方案
@@ -327,17 +366,21 @@ Summary --> End
   - 不同操作系统下用户主目录、应用数据目录不同
   - 不同IDE的 MCP 路径差异（macOS vs Windows）
   - 全局级 rules 支持的差异（CodeBuddy 支持，其余不支持）
+  - IDE 特定的路径约定差异（如 Kiro 的 steering 目录、Antigravity 的 workflows 目录）
 - 方案
   - 使用 PlatformInfo 统一获取用户主目录与应用数据目录
   - 在适配器内部封装 IDE 特定路径，对外暴露统一接口
   - 在同步前检查 supports_global_rules，避免无效操作
+  - 通过注册表统一管理所有适配器，支持动态扩展
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/core/platform.py:9-60](file://MSR-cli/msr_sync/core/platform.py#L9-L60)
 - [MSR-cli/msr_sync/adapters/codebuddy.py:69-78](file://MSR-cli/msr_sync/adapters/codebuddy.py#L69-L78)
 - [MSR-cli/msr_sync/adapters/qoder.py:70-80](file://MSR-cli/msr_sync/adapters/qoder.py#L70-L80)
 - [MSR-cli/msr_sync/adapters/lingma.py:70-80](file://MSR-cli/msr_sync/adapters/lingma.py#L70-L80)
 - [MSR-cli/msr_sync/adapters/trae.py:71-81](file://MSR-cli/msr_sync/adapters/trae.py#L71-L81)
+- [MSR-cli/msr_sync/adapters/kiro.py:66-75](file://MSR-cli/msr_sync/adapters/kiro.py#L66-L75)
+- [MSR-cli/msr_sync/adapters/antigravity.py:71-80](file://MSR-cli/msr_sync/adapters/antigravity.py#L71-L80)
 
 ## 依赖分析
 - 模块耦合
@@ -361,23 +404,25 @@ BASE --> CB["adapters/codebuddy.py"]
 BASE --> QD["adapters/qoder.py"]
 BASE --> LM["adapters/lingma.py"]
 BASE --> TR["adapters/trae.py"]
+BASE --> KI["adapters/kiro.py"]
+BASE --> AG["adapters/antigravity.py"]
 SYNC --> FM["core/frontmatter.py"]
 SYNC --> PL["core/platform.py"]
 INIT --> PL
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/cli.py:1-116](file://MSR-cli/msr_sync/cli.py#L1-L116)
 - [MSR-cli/msr_sync/commands/init_cmd.py:1-137](file://MSR-cli/msr_sync/commands/init_cmd.py#L1-L137)
 - [MSR-cli/msr_sync/commands/sync_cmd.py:1-411](file://MSR-cli/msr_sync/commands/sync_cmd.py#L1-L411)
-- [MSR-cli/msr_sync/adapters/registry.py:1-88](file://MSR-cli/msr_sync/adapters/registry.py#L1-L88)
-- [MSR-cli/msr_sync/core/frontmatter.py:1-145](file://MSR-cli/msr_sync/core/frontmatter.py#L1-L145)
+- [MSR-cli/msr_sync/adapters/registry.py:1-91](file://MSR-cli/msr_sync/adapters/registry.py#L1-L91)
+- [MSR-cli/msr_sync/core/frontmatter.py:1-177](file://MSR-cli/msr_sync/core/frontmatter.py#L1-L177)
 - [MSR-cli/msr_sync/core/platform.py:1-60](file://MSR-cli/msr_sync/core/platform.py#L1-L60)
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/commands/sync_cmd.py:14-24](file://MSR-cli/msr_sync/commands/sync_cmd.py#L14-L24)
 - [MSR-cli/msr_sync/commands/init_cmd.py:9-11](file://MSR-cli/msr_sync/commands/init_cmd.py#L9-L11)
-- [MSR-cli/msr_sync/adapters/registry.py:1-88](file://MSR-cli/msr_sync/adapters/registry.py#L1-L88)
+- [MSR-cli/msr_sync/adapters/registry.py:1-91](file://MSR-cli/msr_sync/adapters/registry.py#L1-L91)
 - [MSR-cli/pyproject.toml:18-27](file://MSR-cli/pyproject.toml#L18-L27)
 
 ## 性能考虑
@@ -385,8 +430,6 @@ INIT --> PL
 - 路径解析与文件I/O：规则写入与技能复制为常见操作，建议批量处理与并发控制（当前实现为顺序处理，可作为后续优化方向）
 - frontmatter解析：解析与剥离frontmatter为O(n)线性复杂度，影响主要取决于内容长度
 - MCP 合并：JSON读取与合并为O(m)（m为服务器条目数），冲突确认为交互式阻塞
-
-[本节为一般性讨论，不直接分析具体文件]
 
 ## 故障排查指南
 - 不支持的 IDE 名称
@@ -401,17 +444,18 @@ INIT --> PL
 - 全局级 rules 同步被跳过
   - 现象：日志提示某 IDE 不支持全局级 rules
   - 排查：调用 supports_global_rules() 并仅在支持的 IDE 上进行全局同步
+- Antigravity 全局 rules 不兼容
+  - 现象：Antigravity 不支持全局级多文件 rules
+  - 排查：Antigravity 的全局 rules 为单文件 GEMINI.md，与 MSR 多文件模型不兼容
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/registry.py:34-36](file://MSR-cli/msr_sync/adapters/registry.py#L34-L36)
 - [MSR-cli/msr_sync/core/platform.py:28-30](file://MSR-cli/msr_sync/core/platform.py#L28-L30)
 - [MSR-cli/msr_sync/commands/sync_cmd.py:270-271](file://MSR-cli/msr_sync/commands/sync_cmd.py#L270-L271)
 - [MSR-cli/msr_sync/commands/sync_cmd.py:205-207](file://MSR-cli/msr_sync/commands/sync_cmd.py#L205-L207)
 
 ## 结论
-本系统通过适配器模式与注册表机制，实现了对多款AI IDE的统一管理。四个适配器在路径约定、格式头部、能力查询与配置扫描方面各有差异，但共享同一抽象接口，保证了上层命令处理器的简洁与稳定。平台与frontmatter模块提供了跨平台与内容处理的基础能力。未来扩展新IDE时，只需遵循BaseAdapter接口，实现路径解析、格式转换、能力查询与扫描方法，并在注册表中登记即可。
-
-[本节为总结性内容，不直接分析具体文件]
+本系统通过适配器模式与注册表机制，实现了对六款AI IDE的统一管理。六个适配器在路径约定、格式头部、能力查询与配置扫描方面各有差异，但共享同一抽象接口，保证了上层命令处理器的简洁与稳定。新增的 Kiro 和 Antigravity 适配器进一步丰富了系统对不同 IDE 的支持，展示了适配器模式在处理多样化需求时的强大灵活性。平台与frontmatter模块提供了跨平台与内容处理的基础能力。未来扩展新IDE时，只需遵循BaseAdapter接口，实现路径解析、格式转换、能力查询与扫描方法，并在注册表中登记即可。
 
 ## 附录
 
@@ -432,9 +476,9 @@ INIT --> PL
   - 在 format_rule_content 中保持幂等性，避免重复添加头部
   - 在 scan_existing_configs 中对平台不支持的情况进行异常捕获与降级处理
 
-章节来源
+**章节来源**
 - [MSR-cli/msr_sync/adapters/base.py:18-105](file://MSR-cli/msr_sync/adapters/base.py#L18-L105)
-- [MSR-cli/msr_sync/adapters/registry.py:10-15](file://MSR-cli/msr_sync/adapters/registry.py#L10-L15)
+- [MSR-cli/msr_sync/adapters/registry.py:10-18](file://MSR-cli/msr_sync/adapters/registry.py#L10-L18)
 - [MSR-cli/tests/test_adapters.py:187-256](file://MSR-cli/tests/test_adapters.py#L187-L256)
 
 ### 关键流程与算法可视化
@@ -457,7 +501,7 @@ Write --> Done(["完成"])
 Skip --> Done
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/commands/sync_cmd.py:179-231](file://MSR-cli/msr_sync/commands/sync_cmd.py#L179-L231)
 - [MSR-cli/msr_sync/core/frontmatter.py:10-24](file://MSR-cli/msr_sync/core/frontmatter.py#L10-L24)
 
@@ -480,5 +524,28 @@ WriteBack --> End(["完成"])
 Abort --> End
 ```
 
-图表来源
+**图表来源**
 - [MSR-cli/msr_sync/commands/sync_cmd.py:238-350](file://MSR-cli/msr_sync/commands/sync_cmd.py#L238-L350)
+
+### 新增适配器详细对比
+
+#### Kiro 适配器特性
+- **路径约定**：使用 `.kiro/steering/` 目录存储规则，`.kiro/skills/` 目录存储技能
+- **全局支持**：支持全局级 rules（steering），与项目级规则分离
+- **MCP 路径**：跨平台统一，位于 `~/.kiro/mcp.json`
+- **格式处理**：不添加额外头部，直接返回原始内容
+
+#### Antigravity 适配器特性
+- **路径约定**：项目级 rules 位于 `.agents/rules/`，skills 对应 workflows 位于 `.agents/workflows/`
+- **全局限制**：不支持全局级多文件 rules，用户级 rules 为单文件 GEMINI.md
+- **技能映射**：skills 对应 Antigravity 的 workflows，存储为 .md 文件
+- **MCP 路径**：位于 `~/.gemini/antigravity/mcp_config.json`
+- **格式处理**：不添加额外头部，直接返回原始内容
+
+**章节来源**
+- [MSR-cli/msr_sync/adapters/kiro.py:5-12](file://MSR-cli/msr_sync/adapters/kiro.py#L5-L12)
+- [MSR-cli/msr_sync/adapters/antigravity.py:5-12](file://MSR-cli/msr_sync/adapters/antigravity.py#L5-L12)
+- [MSR-cli/msr_sync/adapters/kiro.py:94-96](file://MSR-cli/msr_sync/adapters/kiro.py#L94-L96)
+- [MSR-cli/msr_sync/adapters/antigravity.py:99-101](file://MSR-cli/msr_sync/adapters/antigravity.py#L99-L101)
+- [MSR-cli/tests/test_kiro_adapter.py:26-28](file://MSR-cli/tests/test_kiro_adapter.py#L26-L28)
+- [MSR-cli/tests/test_antigravity_adapter.py:26-28](file://MSR-cli/tests/test_antigravity_adapter.py#L26-L28)

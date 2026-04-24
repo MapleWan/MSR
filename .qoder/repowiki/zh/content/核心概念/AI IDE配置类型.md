@@ -10,12 +10,24 @@
 - [MSR-cli/msr_sync/adapters/qoder.py](file://MSR-cli/msr_sync/adapters/qoder.py)
 - [MSR-cli/msr_sync/adapters/lingma.py](file://MSR-cli/msr_sync/adapters/lingma.py)
 - [MSR-cli/msr_sync/adapters/trae.py](file://MSR-cli/msr_sync/adapters/trae.py)
+- [MSR-cli/msr_sync/adapters/kiro.py](file://MSR-cli/msr_sync/adapters/kiro.py)
+- [MSR-cli/msr_sync/adapters/antigravity.py](file://MSR-cli/msr_sync/adapters/antigravity.py)
+- [MSR-cli/msr_sync/adapters/registry.py](file://MSR-cli/msr_sync/adapters/registry.py)
 - [.kiro/specs/mcp-sync-fix/bugfix.md](file://.kiro/specs/mcp-sync-fix/bugfix.md)
 - [.kiro/specs/mcp-sync-fix/tasks.md](file://.kiro/specs/mcp-sync-fix/tasks.md)
 - [.kiro/specs/mcp-sync-fix/design.md](file://.kiro/specs/mcp-sync-fix/design.md)
 - [MSR-cli/tests/test_mcp_merge.py](file://MSR-cli/tests/test_mcp_merge.py)
 - [MSR-cli/tests/test_bug_condition_mcp.py](file://MSR-cli/tests/test_bug_condition_mcp.py)
+- [MSR-cli/tests/test_kiro_adapter.py](file://MSR-cli/tests/test_kiro_adapter.py)
+- [MSR-cli/tests/test_antigravity_adapter.py](file://MSR-cli/tests/test_antigravity_adapter.py)
 </cite>
+
+## 更新摘要
+**所做更改**
+- 新增Kiro和Antigravity适配器的详细说明
+- 更新适配器注册表和Frontmatter模板支持
+- 扩展配置扫描实现对比表格
+- 更新适配器能力矩阵和最佳实践
 
 ## 目录
 1. [简介](#简介)
@@ -30,15 +42,17 @@
 10. [附录](#附录)
 
 ## 简介
-本文件系统性阐述统一仓库中 AI IDE 配置的三大类型：Rules、Skills、MCP。围绕其含义、作用范围、命名规范、版本管理、存储结构、相互关系与依赖、最佳实践与选择指南进行全面说明，并结合代码库中的适配器实现与 MCP 同步修复规范，给出可操作的组织与管理建议。
+本文件系统性阐述统一仓库中 AI IDE 配置的四大类型：Rules、Skills、MCP。围绕其含义、作用范围、命名规范、版本管理、存储结构、相互关系与依赖、最佳实践与选择指南进行全面说明，并结合代码库中的适配器实现与 MCP 同步修复规范，给出可操作的组织与管理建议。
+
+**更新** 新增Kiro和Antigravity两大AI IDE的支持，扩展了适配器生态系统。
 
 ## 项目结构
-本项目通过“统一仓库”集中管理多 IDE 的配置，采用“按类型分目录”的组织方式：
+本项目通过"统一仓库"集中管理多 IDE 的配置，采用"按类型分目录"的组织方式：
 - RULES：规则类配置，按名称分目录，版本号递增
 - SKILLS：技能类配置，按名称分目录，版本号递增
 - MCP：模型控制平面（MCP）配置，按名称分目录，版本号递增
 
-同时，针对不同 IDE（CodeBuddy、Qoder、Lingma、Trae）提供适配器，负责：
+同时，针对不同 IDE（CodeBuddy、Qoder、Lingma、Trae、Kiro、Antigravity）提供适配器，负责：
 - 路径解析：确定各 IDE 中规则、技能、MCP 的存储位置
 - 格式转换：将统一仓库中的内容转换为 IDE 特定格式（含 frontmatter）
 - 能力查询：是否支持全局级规则
@@ -51,28 +65,38 @@ R["RULES/<name>/V<n>/<name>.md"]
 S["SKILLS/<name>/V<n>/..."]
 M["MCP/<name>/V<n>/mcp.json"]
 end
-subgraph "适配器"
+subgraph "适配器生态"
 CB["CodeBuddyAdapter"]
 QD["QoderAdapter"]
 LM["LingmaAdapter"]
 TR["TraeAdapter"]
+KI["KiroAdapter"]
+AG["AntigravityAdapter"]
 end
 CB --> |"路径/格式/能力"| CB
 QD --> |"路径/格式/能力"| QD
 LM --> |"路径/格式/能力"| LM
 TR --> |"路径/格式/能力"| TR
+KI --> |"路径/格式/能力"| KI
+AG --> |"路径/格式/能力"| AG
 R --> CB
 R --> QD
 R --> LM
 R --> TR
+R --> KI
+R --> AG
 S --> CB
 S --> QD
 S --> LM
 S --> TR
+S --> KI
+S --> AG
 M --> CB
 M --> QD
 M --> LM
 M --> TR
+M --> KI
+M --> AG
 ```
 
 **图表来源**
@@ -82,6 +106,8 @@ M --> TR
 - [MSR-cli/msr_sync/adapters/qoder.py:31-80](file://MSR-cli/msr_sync/adapters/qoder.py#L31-L80)
 - [MSR-cli/msr_sync/adapters/lingma.py:31-80](file://MSR-cli/msr_sync/adapters/lingma.py#L31-L80)
 - [MSR-cli/msr_sync/adapters/trae.py:30-81](file://MSR-cli/msr_sync/adapters/trae.py#L30-L81)
+- [MSR-cli/msr_sync/adapters/kiro.py:21-133](file://MSR-cli/msr_sync/adapters/kiro.py#L21-L133)
+- [MSR-cli/msr_sync/adapters/antigravity.py:22-131](file://MSR-cli/msr_sync/adapters/antigravity.py#L22-L131)
 
 **章节来源**
 - [MSR-cli/msr_sync/core/repository.py:89-121](file://MSR-cli/msr_sync/core/repository.py#L89-L121)
@@ -90,13 +116,15 @@ M --> TR
 ## 核心组件
 - 统一仓库管理器：负责 RULES、SKILLS、MCP 的存储与版本管理，提供按类型与名称的目录结构与版本号递增策略。
 - IDE 适配器：为不同 IDE 提供统一接口，包括路径解析、格式转换、能力查询与配置扫描。
-- Frontmatter 模板：为 CodeBuddy、Qoder、Lingma 提供特定 frontmatter 模板，保证 IDE 识别与启用。
+- Frontmatter 模板：为 CodeBuddy、Qoder、Lingma、Antigravity 提供特定 frontmatter 模板，保证 IDE 识别与启用。
 - 全局配置：管理统一仓库根路径、忽略模式、默认 IDE 与默认同步层级。
+
+**更新** 新增Kiro和Antigravity适配器支持，扩展了Frontmatter模板支持。
 
 **章节来源**
 - [MSR-cli/msr_sync/core/repository.py:89-121](file://MSR-cli/msr_sync/core/repository.py#L89-L121)
 - [MSR-cli/msr_sync/adapters/base.py:18-104](file://MSR-cli/msr_sync/adapters/base.py#L18-L104)
-- [MSR-cli/msr_sync/core/frontmatter.py:110-144](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L144)
+- [MSR-cli/msr_sync/core/frontmatter.py:110-177](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L177)
 - [MSR-cli/msr_sync/core/config.py:18-88](file://MSR-cli/msr_sync/core/config.py#L18-L88)
 
 ## 架构总览
@@ -122,7 +150,7 @@ IDE-->>U : "生效并可被 IDE 识别"
 
 **图表来源**
 - [MSR-cli/msr_sync/adapters/base.py:25-104](file://MSR-cli/msr_sync/adapters/base.py#L25-L104)
-- [MSR-cli/msr_sync/core/frontmatter.py:110-144](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L144)
+- [MSR-cli/msr_sync/core/frontmatter.py:110-177](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L177)
 - [MSR-cli/msr_sync/core/repository.py:89-121](file://MSR-cli/msr_sync/core/repository.py#L89-L121)
 
 ## 详细组件分析
@@ -132,8 +160,8 @@ IDE-->>U : "生效并可被 IDE 识别"
 - 存储结构：统一仓库中 RULES/<name>/V<n>/<name>.md；名称与版本号均为字符串，版本号按 V1/V2 递增。
 - 命名规范：名称建议使用语义清晰的英文标识，避免特殊字符；同一规则在不同 IDE 下可共享同一名称，但内容可能因 frontmatter 而异。
 - 版本管理：每次新增版本时，自动在对应名称目录下创建新版本子目录并写入文件。
-- 作用范围：CodeBuddy 支持全局级规则；Qoder、Lingma、Trae 仅支持项目级规则。
-- 适配器差异：不同 IDE 的规则内容需要添加各自的 frontmatter 模板；Trae 不添加额外头部，直接使用纯内容。
+- 作用范围：CodeBuddy、Kiro 支持全局级规则；Qoder、Lingma、Trae、Antigravity 仅支持项目级规则。
+- 适配器差异：不同 IDE 的规则内容需要添加各自的 frontmatter 模板；Antigravity 不添加额外头部，直接使用纯内容。
 
 ```mermaid
 flowchart TD
@@ -146,19 +174,25 @@ WriteFile --> FormatCB["CodeBuddy：添加 CodeBuddy frontmatter"]
 WriteFile --> FormatQD["Qoder：添加 Qoder frontmatter"]
 WriteFile --> FormatLM["Lingma：添加 Lingma frontmatter"]
 WriteFile --> FormatTR["Trae：不添加额外头部"]
+WriteFile --> FormatKI["Kiro：不添加额外头部"]
+WriteFile --> FormatAG["Antigravity：添加 Antigravity frontmatter"]
 FormatCB --> End(["完成"])
 FormatQD --> End
 FormatLM --> End
 FormatTR --> End
+FormatKI --> End
+FormatAG --> End
 ```
 
 **图表来源**
 - [MSR-cli/msr_sync/core/repository.py:89-112](file://MSR-cli/msr_sync/core/repository.py#L89-L112)
-- [MSR-cli/msr_sync/core/frontmatter.py:110-144](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L144)
+- [MSR-cli/msr_sync/core/frontmatter.py:110-177](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L177)
 - [MSR-cli/msr_sync/adapters/codebuddy.py:82-100](file://MSR-cli/msr_sync/adapters/codebuddy.py#L82-L100)
 - [MSR-cli/msr_sync/adapters/qoder.py:84-98](file://MSR-cli/msr_sync/adapters/qoder.py#L84-L98)
 - [MSR-cli/msr_sync/adapters/lingma.py:84-98](file://MSR-cli/msr_sync/adapters/lingma.py#L84-L98)
 - [MSR-cli/msr_sync/adapters/trae.py:85-96](file://MSR-cli/msr_sync/adapters/trae.py#L85-L96)
+- [MSR-cli/msr_sync/adapters/kiro.py:79-90](file://MSR-cli/msr_sync/adapters/kiro.py#L79-L90)
+- [MSR-cli/msr_sync/adapters/antigravity.py:84-95](file://MSR-cli/msr_sync/adapters/antigravity.py#L84-L95)
 
 **章节来源**
 - [MSR-cli/msr_sync/core/repository.py:89-112](file://MSR-cli/msr_sync/core/repository.py#L89-L112)
@@ -166,14 +200,16 @@ FormatTR --> End
 - [MSR-cli/msr_sync/adapters/qoder.py:31-50](file://MSR-cli/msr_sync/adapters/qoder.py#L31-L50)
 - [MSR-cli/msr_sync/adapters/lingma.py:31-50](file://MSR-cli/msr_sync/adapters/lingma.py#L31-L50)
 - [MSR-cli/msr_sync/adapters/trae.py:30-49](file://MSR-cli/msr_sync/adapters/trae.py#L30-L49)
-- [MSR-cli/msr_sync/core/frontmatter.py:110-144](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L144)
+- [MSR-cli/msr_sync/adapters/kiro.py:24-96](file://MSR-cli/msr_sync/adapters/kiro.py#L24-L96)
+- [MSR-cli/msr_sync/adapters/antigravity.py:31-101](file://MSR-cli/msr_sync/adapters/antigravity.py#L31-L101)
+- [MSR-cli/msr_sync/core/frontmatter.py:110-177](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L177)
 
 ### Skills（技能）配置
 - 含义与作用：封装一组规则、脚本或资源，形成可复用的技能包，IDE 侧按目录结构读取。
 - 存储结构：统一仓库中 SKILLS/<name>/V<n>/...（目录内包含技能所需的所有文件与子目录）。
 - 命名规范：名称建议与业务域相关，避免与规则名称冲突；版本号同样按 V1/V2 递增。
 - 版本管理：复制源目录至新版本子目录，保持相对路径与资源完整性。
-- 作用范围：CodeBuddy、Qoder、Lingma、Trae 均支持项目级与用户级（部分 IDE）技能目录。
+- 作用范围：CodeBuddy、Qoder、Lingma、Trae、Kiro、Antigravity 均支持项目级与用户级（部分 IDE）技能目录。
 
 ```mermaid
 flowchart TD
@@ -226,7 +262,7 @@ RewriteCWD --> EndM(["完成"])
 ## 依赖关系分析
 - 统一仓库与适配器：统一仓库提供内容与版本号；适配器负责路径解析与格式转换。
 - 适配器与 IDE：适配器将转换后的内容写入 IDE 的规则、技能、MCP 文件。
-- Frontmatter 模块：为 CodeBuddy、Qoder、Lingma 提供 frontmatter 模板，Trae 不添加头部。
+- Frontmatter 模块：为 CodeBuddy、Qoder、Lingma、Antigravity 提供 frontmatter 模板，Kiro、Trae 不添加头部。
 - 全局配置：影响统一仓库根路径与默认同步层级，间接影响适配器的路径解析。
 
 ```mermaid
@@ -236,21 +272,27 @@ Repo --> CB["CodeBuddyAdapter"]
 Repo --> QD["QoderAdapter"]
 Repo --> LM["LingmaAdapter"]
 Repo --> TR["TraeAdapter"]
+Repo --> KI["KiroAdapter"]
+Repo --> AG["AntigravityAdapter"]
 FM["Frontmatter 模板"] --> CB
 FM --> QD
 FM --> LM
+FM --> AG
 TR -.->|"不添加头部"| TR
+KI -.->|"不添加头部"| KI
 CB --> IDE_CB["CodeBuddy"]
 QD --> IDE_QD["Qoder"]
 LM --> IDE_LM["Lingma"]
 TR --> IDE_TR["Trae"]
+KI --> IDE_KI["Kiro"]
+AG --> IDE_AG["Antigravity"]
 ```
 
 **图表来源**
 - [MSR-cli/msr_sync/core/config.py:18-88](file://MSR-cli/msr_sync/core/config.py#L18-L88)
 - [MSR-cli/msr_sync/core/repository.py:89-121](file://MSR-cli/msr_sync/core/repository.py#L89-L121)
 - [MSR-cli/msr_sync/adapters/base.py:25-104](file://MSR-cli/msr_sync/adapters/base.py#L25-L104)
-- [MSR-cli/msr_sync/core/frontmatter.py:110-144](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L144)
+- [MSR-cli/msr_sync/core/frontmatter.py:110-177](file://MSR-cli/msr_sync/core/frontmatter.py#L110-L177)
 
 **章节来源**
 - [MSR-cli/msr_sync/core/config.py:18-88](file://MSR-cli/msr_sync/core/config.py#L18-L88)
@@ -275,30 +317,65 @@ TR --> IDE_TR["Trae"]
 - [MSR-cli/tests/test_bug_condition_mcp.py:63-73](file://MSR-cli/tests/test_bug_condition_mcp.py#L63-L73)
 
 ## 结论
-Rules、Skills、MCP 三类配置在统一仓库中以清晰的目录与版本结构组织，通过适配器实现跨 IDE 的路径解析与格式转换。MCP 同步修复明确了标准键名与 cwd 重写的必要性。遵循本文的命名规范、版本管理与最佳实践，可在统一仓库中高效管理多 IDE 配置，并降低迁移与维护成本。
+Rules、Skills、MCP 三类配置在统一仓库中以清晰的目录与版本结构组织，通过适配器实现跨 IDE 的路径解析与格式转换。新增的Kiro和Antigravity适配器进一步扩展了支持范围，其中Kiro支持全局级规则而Antigravity不支持。MCP 同步修复明确了标准键名与 cwd 重写的必要性。遵循本文的命名规范、版本管理与最佳实践，可在统一仓库中高效管理多 IDE 配置，并降低迁移与维护成本。
 
 ## 附录
 
 ### 配置类型对比与选择指南
-- Rules：适用于通用规则模板，CodeBuddy 支持全局级，其他 IDE 仅支持项目级。优先用于跨 IDE 的通用规则。
+- Rules：适用于通用规则模板，CodeBuddy、Kiro 支持全局级，其他 IDE 仅支持项目级。优先用于跨 IDE 的通用规则。
 - Skills：适用于复杂技能包，包含多文件与资源。按业务域命名，建议与 Rules 解耦。
 - MCP：适用于 MCP 服务器清单，注意使用标准键名 mcpServers，并在同步时重写 cwd。
+
+**更新** 新增Kiro和Antigravity的规则支持能力对比。
 
 **章节来源**
 - [MSR-cli/msr_sync/adapters/codebuddy.py:104-106](file://MSR-cli/msr_sync/adapters/codebuddy.py#L104-L106)
 - [MSR-cli/msr_sync/adapters/qoder.py:102-104](file://MSR-cli/msr_sync/adapters/qoder.py#L102-L104)
 - [MSR-cli/msr_sync/adapters/lingma.py:102-104](file://MSR-cli/msr_sync/adapters/lingma.py#L102-L104)
 - [MSR-cli/msr_sync/adapters/trae.py:100-102](file://MSR-cli/msr_sync/adapters/trae.py#L100-L102)
+- [MSR-cli/msr_sync/adapters/kiro.py:94-96](file://MSR-cli/msr_sync/adapters/kiro.py#L94-L96)
+- [MSR-cli/msr_sync/adapters/antigravity.py:99-101](file://MSR-cli/msr_sync/adapters/antigravity.py#L99-L101)
 - [.kiro/specs/mcp-sync-fix/bugfix.md:7-18](file://.kiro/specs/mcp-sync-fix/bugfix.md#L7-L18)
+
+### 配置扫描实现对比
+
+| IDE | 规则扫描 | 技能扫描 | MCP扫描 | 全局规则支持 |
+|-----|----------|----------|---------|-------------|
+| CodeBuddy | ✅ 用户级 | ✅ 用户级 | ✅ 用户级 | ✅ 是 |
+| Qoder | ❌ 禁用 | ✅ 用户级 | ✅ 用户级 | ❌ 否 |
+| Lingma | ❌ 禁用 | ✅ 用户级 | ✅ 用户级 | ❌ 否 |
+| Trae | ❌ 禁用 | ✅ 用户级 | ✅ 用户级 | ❌ 否 |
+| **Kiro** | **✅ 用户级** | **✅ 用户级** | **✅ 用户级** | **✅ 是** |
+| **Antigravity** | **❌ 禁用** | **✅ 用户级** | **✅ 用户级** | **❌ 否** |
+
+**更新** 新增Kiro和Antigravity的配置扫描能力对比。
+
+### 适配器能力矩阵
+
+| 适配器 | 规则路径 | 技能路径 | MCP路径 | 全局规则 | 扫描能力 |
+|--------|----------|----------|---------|----------|----------|
+| CodeBuddy | ~/.codebuddy/steering | ~/.codebuddy/skills | ~/.codebuddy/mcp.json | ✅ 是 | ✅ 完整扫描 |
+| Qoder | ~/.qoder/steering | ~/.qoder/skills | ~/.qoder/mcp.json | ❌ 否 | ✅ 完整扫描 |
+| Lingma | ~/.lingma/steering | ~/.lingma/skills | ~/.lingma/mcp.json | ❌ 否 | ✅ 完整扫描 |
+| Trae | ~/.trae-cn/steering | ~/.trae-cn/skills | ~/.trae-cn/mcp.json | ❌ 否 | ✅ 完整扫描 |
+| **Kiro** | **~/.kiro/steering** | **~/.kiro/skills** | **~/.kiro/mcp.json** | **✅ 是** | **✅ 完整扫描** |
+| **Antigravity** | **~/.agents/rules** | **~/.agents/workflows** | **~/.gemini/antigravity/mcp_config.json** | **❌ 否** | **✅ 完整扫描** |
+
+**更新** 新增Kiro和Antigravity的适配器能力矩阵。
 
 ### 最佳实践
 - 统一仓库根路径与默认层级：通过全局配置设置 repo_path 与 default_scope，确保团队一致性。
 - 命名与版本：规则与技能名称语义化，版本号递增；MCP 使用标准键名 mcpServers。
 - 同步前扫描：使用适配器的扫描能力，识别 IDE 已有配置，避免覆盖重要本地设置。
 - 测试验证：对 MCP 合并与规则格式转换进行测试，确保修复与回归不发生。
+- IDE 选择：根据全局规则需求选择支持全局规则的 IDE（CodeBuddy、Kiro），否则使用项目级规则。
+
+**更新** 新增Kiro和Antigravity的使用建议。
 
 **章节来源**
 - [MSR-cli/msr_sync/core/config.py:18-88](file://MSR-cli/msr_sync/core/config.py#L18-L88)
 - [MSR-cli/msr_sync/adapters/base.py:93-104](file://MSR-cli/msr_sync/adapters/base.py#L93-L104)
 - [MSR-cli/tests/test_mcp_merge.py](file://MSR-cli/tests/test_mcp_merge.py)
 - [MSR-cli/tests/test_bug_condition_mcp.py:63-73](file://MSR-cli/tests/test_bug_condition_mcp.py#L63-L73)
+- [MSR-cli/tests/test_kiro_adapter.py:19-28](file://MSR-cli/tests/test_kiro_adapter.py#L19-L28)
+- [MSR-cli/tests/test_antigravity_adapter.py:19-28](file://MSR-cli/tests/test_antigravity_adapter.py#L19-L28)
