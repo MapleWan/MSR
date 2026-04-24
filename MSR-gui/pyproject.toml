@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msr-gui"
+version = "0.1.0"
+description = "MSR Sync Manager - 可视化管理界面"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "nicegui>=2.0",
+    "msr-sync",
+]
+
+[project.optional-dependencies]
+native = ["pywebview>=5.0"]
+dev = ["pyinstaller"]
+
+[project.scripts]
+msr-gui = "msr_gui.main:run"
