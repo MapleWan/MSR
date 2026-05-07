@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".qoder/hooks/secret-detect.sh",
+            "name": "secret-detect",
+            "description": "Detect secrets before editing or writing files",
+            "statusMessage": "Scanning for secrets..."
+          }
+        ]
+      }
+    ]
+  }
+}

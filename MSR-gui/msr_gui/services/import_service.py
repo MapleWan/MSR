@@ -12,6 +12,15 @@ from msr_gui.state import app_state
 
 
 class ImportService:
+    def __init__(self):
+        self._resolver = None
+
+    def cleanup(self):
+        """清理 SourceResolver 的临时资源。"""
+        if self._resolver:
+            self._resolver.cleanup()
+            self._resolver = None
+
     async def resolve_source(self, source: str, config_type: str) -> dict:
         """解析导入来源，返回配置项列表
 
@@ -22,11 +31,12 @@ class ImportService:
         Returns:
             解析结果字典，包含 items, needs_confirm, count
         """
+        self.cleanup()
+        self._resolver = SourceResolver()
 
         def _resolve():
-            resolver = SourceResolver()
             try:
-                items, needs_confirm = resolver.resolve(source, config_type)
+                items, needs_confirm = self._resolver.resolve(source, config_type)
                 return {
                     "success": True,
                     "items": [
@@ -40,14 +50,17 @@ class ImportService:
                     "needs_confirm": needs_confirm,
                     "count": len(items),
                 }
-            finally:
-                resolver.cleanup()
+            except MSRError as e:
+                return {"success": False, "error": str(e), "items": [], "needs_confirm": False, "count": 0}
 
         try:
             result = await run.io_bound(_resolve)
+            if not result["success"]:
+                self.cleanup()
             app_state.add_log(f"解析来源成功: 发现 {result['count']} 个配置项", "success")
             return result
         except MSRError as e:
+            self.cleanup()
             app_state.add_log(f"解析来源失败: {e}", "error")
             return {"success": False, "error": str(e), "items": [], "needs_confirm": False, "count": 0}
 
@@ -124,6 +137,8 @@ class ImportService:
                 "total": len(items),
                 "results": [],
             }
+        finally:
+            self.cleanup()
 
     def _store_item(self, repo: Repository, config_type: str, name: str, path: str):
         """将单个配置项存储到仓库

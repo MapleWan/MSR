@@ -33,7 +33,7 @@ def run():
         port=args.port,
         native=not args.browser,
         reload=False,
-        dark=None,
+        dark=False,
     )
 
 

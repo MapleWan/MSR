@@ -32,6 +32,9 @@ async def import_page():
 
     state = State()
 
+    # UI 元素引用字典（避免 NiceGUI 3.x 事件回调的闭包作用域问题）
+    ui_refs = {}
+
     # ==================== 辅助函数 ====================
     def get_source():
         """获取当前有效的来源字符串。"""
@@ -171,8 +174,7 @@ async def import_page():
         table_rows.refresh()
 
     def reset_wizard():
-        """重置向导状态，回到 Step 1。"""
-        state.config_type = 'rules'
+        """重置向导状态，回到 Step 1（保留当前配置类型）。"""
         state.source_mode = 'path'
         state.source_value = ''
         state.uploaded_file_path = ''
@@ -183,31 +185,40 @@ async def import_page():
         state.fail_count = 0
         state.total_count = 0
         state.resolve_error = ''
-        config_radio.set_value('rules')
-        source_tabs.set_value('path')
-        path_input.set_value('')
-        url_input.set_value('')
-        select_all_cb.set_value(True)
-        upload_label.text = '尚未选择文件'
-        stepper.set_value('选择来源')
+        ui_refs['source_tabs'].set_value('path')
+        ui_refs['path_input'].set_value('')
+        ui_refs['url_input'].set_value('')
+        ui_refs['select_all_cb'].set_value(True)
+        ui_refs['upload_label'].text = '尚未选择文件'
+        ui_refs['upload_component'].reset()
+        ui_refs['stepper'].set_value('选择来源')
+        import_service.cleanup()
 
     # ==================== UI 构建 ====================
     with create_layout('导入配置'):
-        ui.label('导入配置向导').classes('text-h4 q-mb-md')
+        ui.label('导入配置向导').classes('text-2xl font-bold text-slate-800 q-mb-md')
 
         with ui.stepper().props('vertical').classes('w-full') as stepper:
+            ui_refs['stepper'] = stepper
 
             # ---------- Step 1: 选择来源 ----------
             with ui.step('选择来源') as step1:
                 ui.label('请选择配置类型和导入来源').classes('text-subtitle1 q-mb-sm')
 
                 # 配置类型选择
+                def on_config_type_change(e):
+                    """配置类型切换时清空上传状态。"""
+                    state.config_type = e.value
+                    state.uploaded_file_path = ''
+                    upload_label.text = '尚未选择文件'
+                    upload_component.reset()
+
                 with ui.row().classes('q-gutter-md q-mb-md'):
                     ui.label('配置类型:').classes('text-body1')
                     config_radio = ui.radio(
                         {'rules': 'Rules', 'skills': 'Skills', 'mcp': 'MCP'},
                         value='rules',
-                        on_change=lambda e: setattr(state, 'config_type', e.value),
+                        on_change=on_config_type_change,
                     )
 
                 # 来源方式切换
@@ -216,12 +227,27 @@ async def import_page():
                     tab_path = ui.tab('path', label='文件/目录路径')
                     tab_url = ui.tab('url', label='URL')
                     tab_upload = ui.tab('upload', label='上传文件')
-                source_tabs.on_value_change(lambda e: setattr(state, 'source_mode', e.value))
+                def on_source_mode_change(e):
+                    """来源方式切换时清空其他输入。"""
+                    state.source_mode = e.value
+                    state.source_value = ''
+                    state.uploaded_file_path = ''
+                    if 'path_input' in ui_refs:
+                        ui_refs['path_input'].set_value('')
+                    if 'url_input' in ui_refs:
+                        ui_refs['url_input'].set_value('')
+                    if 'upload_label' in ui_refs:
+                        ui_refs['upload_label'].text = '尚未选择文件'
+                    if 'upload_component' in ui_refs:
+                        ui_refs['upload_component'].reset()
+
+                source_tabs.on_value_change(on_source_mode_change)
+                ui_refs['source_tabs'] = source_tabs
 
                 with ui.tab_panels(source_tabs, value='path').classes('w-full'):
                     # 面板: 文件/目录路径
                     with ui.tab_panel('path'):
-                        path_input = ui.input(
+                        ui_refs['path_input'] = ui.input(
                             label='文件或目录路径',
                             placeholder='输入绝对路径，如 /path/to/rules.md 或 /path/to/dir',
                             on_change=lambda e: setattr(state, 'source_value', e.value),
@@ -229,7 +255,7 @@ async def import_page():
 
                     # 面板: URL
                     with ui.tab_panel('url'):
-                        url_input = ui.input(
+                        ui_refs['url_input'] = ui.input(
                             label='URL 地址',
                             placeholder='https://example.com/config.md',
                             on_change=lambda e: setattr(state, 'source_value', e.value),
@@ -249,17 +275,17 @@ async def import_page():
                                 tmp.write(e.content.read())
                                 state.uploaded_file_path = tmp.name
                             ui.notify(f'已上传: {e.name}', type='positive')
-                            upload_label.text = f'已选择: {e.name}'
+                            ui_refs['upload_label'].text = f'已选择: {e.name}'
 
-                        ui.upload(
+                        ui_refs['upload_component'] = ui.upload(
                             label='上传 .md / .zip / .tar.gz 文件',
                             auto_upload=True,
                             on_upload=on_upload,
                         ).props('accept=".md,.zip,.tar.gz"').classes('w-full')
-                        upload_label = ui.label('尚未选择文件').classes('text-caption text-grey')
+                        ui_refs['upload_label'] = ui.label('尚未选择文件').classes('text-caption text-grey')
 
                 with ui.stepper_navigation():
-                    ui.button('下一步', on_click=on_next_to_step2, color='primary')
+                    ui.button('下一步', on_click=on_next_to_step2, color='primary').props('no-caps')
 
             # ---------- Step 2: 预览确认 ----------
             with ui.step('预览确认') as step2:
@@ -282,14 +308,14 @@ async def import_page():
                 with result_table:
                     # 全选按钮
                     with ui.row().classes('items-center q-mb-sm'):
-                        select_all_cb = ui.checkbox(
+                        ui_refs['select_all_cb'] = ui.checkbox(
                             '全选',
                             value=True,
                             on_change=lambda e: on_select_all(e.value),
                         )
 
                     # 表格头部
-                    with ui.row().classes('w-full bg-grey-2 text-weight-bold q-pa-sm'):
+                    with ui.row().classes('w-full msr-table-header q-pa-sm rounded-t-lg'):
                         ui.label('').classes('col-1')          # 勾选列
                         ui.label('配置名称').classes('col-5')
                         ui.label('来源类型').classes('col-3')
@@ -315,16 +341,16 @@ async def import_page():
                                         value=checked,
                                         on_change=lambda e, n=name: on_item_toggle(n, e.value),
                                     )
-                                ui.label(name).classes('col-5')
-                                ui.label(source_type).classes('col-3')
+                                ui.label(name).classes('col-5 text-sm text-slate-700')
+                                ui.label(source_type).classes('col-3 text-sm text-slate-600')
                                 with ui.column().classes('col-3'):
-                                    ui.label(path).classes('text-caption text-grey ellipsis')
+                                    ui.label(path).classes('text-xs text-slate-400 ellipsis')
 
                     table_rows()
 
                 with ui.stepper_navigation():
-                    ui.button('上一步', on_click=stepper.previous).props('flat')
-                    ui.button('开始导入', on_click=do_import, color='primary')
+                    ui.button('上一步', on_click=stepper.previous).props('flat no-caps')
+                    ui.button('开始导入', on_click=do_import, color='primary').props('no-caps')
 
             # ---------- Step 3: 执行导入 ----------
             with ui.step('执行导入') as step3:
@@ -369,13 +395,16 @@ async def import_page():
                 import_progress()
 
                 # 实时日志区域
-                ui.label('导入日志:').classes('text-subtitle2 q-mt-md q-mb-sm')
-                with ui.card().classes('w-full bg-grey-1').style('max-height: 300px; overflow-y: auto;'):
+                ui.label('导入日志:').classes('text-subtitle2 text-slate-600 q-mt-md q-mb-sm')
+                with ui.card().classes('w-full').style('background: #0f172a !important; max-height: 300px; overflow-y: auto;'):
+                    with ui.row().classes('items-center q-pa-sm border-b border-slate-700'):
+                        ui.icon('terminal', size='18px').classes('text-slate-400')
+                        ui.label('终端输出').classes('text-xs text-slate-400 q-ml-sm uppercase tracking-wide')
                     @ui.refreshable
                     def import_logs():
                         """导入日志列表。"""
                         if not state.import_results:
-                            ui.label('暂无日志').classes('text-grey text-caption q-pa-sm')
+                            ui.label('暂无日志').classes('text-slate-500 text-xs q-pa-sm')
                             return
 
                         for r in state.import_results:
@@ -384,16 +413,16 @@ async def import_page():
                             if status == 'success':
                                 version = r.get('version', '-')
                                 msg = f'[成功] {name}  →  {version}'
-                                color_class = 'text-positive'
+                                color_class = 'text-emerald-400'
                             else:
                                 reason = r.get('reason', '未知错误')
                                 msg = f'[失败] {name}  →  {reason}'
-                                color_class = 'text-negative'
+                                color_class = 'text-red-400'
 
-                            ui.label(msg).classes(f'{color_class} text-caption q-pa-xs')
+                            ui.label(msg).classes(f'{color_class} text-xs q-pa-xs font-mono')
 
                     import_logs()
 
                 with ui.stepper_navigation():
-                    ui.button('返回仪表盘', on_click=lambda: ui.navigate.to('/')).props('flat')
-                    ui.button('继续导入', on_click=reset_wizard, color='primary')
+                    ui.button('返回仪表盘', on_click=lambda: ui.navigate.to('/')).props('flat no-caps')
+                    ui.button('继续导入', on_click=reset_wizard, color='primary').props('no-caps')
