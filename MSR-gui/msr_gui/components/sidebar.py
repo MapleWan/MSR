@@ -118,23 +118,29 @@ def create_layout(title: str):
         border-left-color: #3b82f6;
       }
 
-      /* 版本 chip */
-      .msr-chip {
-        background: #dbeafe;
-        color: #1d4ed8;
-        border-radius: 9999px;
-        padding: 0.125rem 0.625rem;
-        font-size: 0.75rem;
-        font-weight: 500;
-        cursor: pointer;
+      /* 版本 chip（应用于 Quasar button，需强选择器权重覆盖默认样式） */
+      .q-btn.msr-chip {
+        background: #dbeafe !important;
+        color: #1d4ed8 !important;
+        border-radius: 9999px !important;
+        padding: 0.125rem 0.625rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 500 !important;
+        min-height: unset !important;
         transition: all 0.15s ease-out;
       }
-      .msr-chip:hover {
-        background: #bfdbfe;
+      .q-btn.msr-chip .q-btn__content {
+        color: inherit !important;
       }
-      .msr-chip-selected {
-        background: #2563eb;
-        color: white;
+      .q-btn.msr-chip:hover {
+        background: #bfdbfe !important;
+      }
+      .q-btn.msr-chip-selected {
+        background: #2563eb !important;
+        color: #ffffff !important;
+      }
+      .q-btn.msr-chip-selected .q-btn__content {
+        color: #ffffff !important;
       }
 
       /* 表格头部 */
