@@ -196,10 +196,17 @@ def create_layout(title: str):
             for label, icon, path in nav_items:
                 is_active = path == current_path
                 active_cls = 'msr-nav-btn-active' if is_active else ''
+
+                def _nav(p=path, active=is_active):
+                    # 已在当前页：不重复跳转，避免页面刷新
+                    if active:
+                        return
+                    ui.navigate.to(p)
+
                 ui.button(
                     label,
                     icon=icon,
-                    on_click=lambda p=path: ui.navigate.to(p),
+                    on_click=_nav,
                 ).props('flat no-caps').classes(f'full-width msr-nav-btn {active_cls}')
 
         # 底部版本号

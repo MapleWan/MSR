@@ -4,6 +4,7 @@ from nicegui import ui
 
 from msr_gui.components.sidebar import create_layout
 from msr_gui.services.repo_service import repo_service
+from msr_gui.utils import get_ide_icon_url
 
 
 @ui.page('/')
@@ -70,10 +71,16 @@ async def dashboard_page():
             with ui.row().classes('gap-3 p-5 wrap'):
                 for ide in ide_list:
                     name = ide.get('name', 'Unknown')
+                    icon_url = get_ide_icon_url(name)
                     with ui.card().classes('msr-card-hover cursor-pointer').style('border: 1px solid #e2e8f0;'):
                         with ui.row().classes('items-center px-4 py-2 gap-2'):
-                            ui.icon('computer').classes('text-blue-600')
-                            ui.label(name).classes('text-sm text-slate-700 font-medium')
+                            if icon_url:
+                                ui.image(icon_url).classes('rounded').style(
+                                    'width: 20px; height: 20px; object-fit: contain;'
+                                )
+                            else:
+                                ui.icon('computer').classes('text-blue-600')
+                            ui.label(name.capitalize()).classes('text-sm text-slate-700 font-medium')
 
         # ---- 快捷操作区 ----
         with ui.card().classes('w-full msr-card'):

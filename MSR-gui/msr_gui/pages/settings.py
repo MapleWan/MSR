@@ -4,6 +4,7 @@ from nicegui import ui
 
 from msr_gui.components.sidebar import create_layout
 from msr_gui.services.repo_service import repo_service
+from msr_gui.utils import get_ide_icon_url
 
 
 @ui.page('/settings')
@@ -15,6 +16,7 @@ async def settings_page():
         try:
             config = await repo_service.get_config()
             status = await repo_service.get_repo_status()
+            ide_list = await repo_service.get_all_ide_info()
         except Exception as e:
             ui.notify(f'加载配置失败: {e}', type='negative')
             return
@@ -31,14 +33,27 @@ async def settings_page():
                     ui.label('仓库路径').classes('text-sm font-medium text-slate-600')
                     repo_path_input = ui.input(value=config.get('repo_path', '')).classes('w-full')
 
-                # 默认 IDE
+                # 默认 IDE（动态从适配器注册表读取 + all 选项）
                 with ui.column().classes('w-full gap-2'):
                     ui.label('默认 IDE').classes('text-sm font-medium text-slate-600')
-                    with ui.row().classes('gap-4'):
-                        current_ides = set(config.get('default_ides', ['all']))
-                        ide_checkboxes = {}
-                        for ide in ['trae', 'qoder', 'lingma', 'codebuddy', 'all']:
-                            ide_checkboxes[ide] = ui.checkbox(ide, value=ide in current_ides)
+                    current_ides = set(config.get('default_ides', ['all']))
+                    ide_checkboxes = {}
+                    with ui.row().classes('gap-4 wrap items-center'):
+                        for ide in ide_list:
+                            name = ide['name']
+                            icon_url = get_ide_icon_url(name)
+                            with ui.row().classes('items-center gap-1'):
+                                if icon_url:
+                                    ui.image(icon_url).style(
+                                        'width: 18px; height: 18px; object-fit: contain;'
+                                    )
+                                ide_checkboxes[name] = ui.checkbox(
+                                    name.capitalize(), value=name in current_ides
+                                )
+                        # “all” 默认项：代表所有 IDE
+                        with ui.row().classes('items-center gap-1'):
+                            ui.icon('select_all', size='18px').classes('text-slate-500')
+                            ide_checkboxes['all'] = ui.checkbox('All', value='all' in current_ides)
 
                 # 默认 Scope
                 with ui.column().classes('w-full gap-2'):

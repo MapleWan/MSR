@@ -28,6 +28,10 @@ def run():
     # 导入页面路由模块 —— @ui.page 装饰器会自动注册各页面路由
     from msr_gui.pages import dashboard, browse, import_page, sync, settings
 
+    # 注册静态资源目录（IDE 图标等）
+    from msr_gui.utils import register_static_assets
+    register_static_assets()
+
     ui.run(
         title='MSR Sync Manager',
         port=args.port,

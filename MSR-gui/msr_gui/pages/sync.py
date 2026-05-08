@@ -6,6 +6,7 @@ from msr_gui.components.sidebar import create_layout
 from msr_gui.services.repo_service import repo_service
 from msr_gui.services.sync_service import sync_service
 from msr_gui.state import app_state
+from msr_gui.utils import get_ide_icon_url
 
 
 # 动作类型 -> 中文标签
@@ -181,13 +182,20 @@ async def sync_page():
                             name = ide['name']
                             is_sel = name in selected_ides
                             card_cls = 'msr-ide-card-selected' if is_sel else 'msr-ide-card'
+                            icon_url = get_ide_icon_url(name)
 
                             with ui.card().on(
                                 'click',
                                 lambda _e, _name=name: _toggle_ide(_name)
                             ).classes(card_cls).style('width: 30%; min-width: 90px'):
                                 with ui.column().classes('items-center w-full gap-1'):
-                                    ui.label(name).classes('text-sm font-medium text-center text-slate-700')
+                                    if icon_url:
+                                        ui.image(icon_url).style(
+                                            'width: 32px; height: 32px; object-fit: contain;'
+                                        )
+                                    else:
+                                        ui.icon('computer', size='28px').classes('text-slate-400')
+                                    ui.label(name.capitalize()).classes('text-sm font-medium text-center text-slate-700')
                                     if not ide['supports_global_rules']:
                                         ui.label('无全局Rules').classes(
                                             'text-xs text-slate-400 text-center'

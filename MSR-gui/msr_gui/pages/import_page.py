@@ -210,8 +210,10 @@ async def import_page():
                     """配置类型切换时清空上传状态。"""
                     state.config_type = e.value
                     state.uploaded_file_path = ''
-                    upload_label.text = '尚未选择文件'
-                    upload_component.reset()
+                    if 'upload_label' in ui_refs:
+                        ui_refs['upload_label'].text = '尚未选择文件'
+                    if 'upload_component' in ui_refs:
+                        ui_refs['upload_component'].reset()
 
                 with ui.row().classes('q-gutter-md q-mb-md'):
                     ui.label('配置类型:').classes('text-body1')
