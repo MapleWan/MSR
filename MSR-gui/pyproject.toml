@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msr-gui"
-version = "0.1.0"
+version = "0.1.1"
 description = "MSR Sync Manager - 可视化管理界面"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -28,6 +28,7 @@ classifiers = [
 dependencies = [
     "nicegui>=2.0",
     "msr-sync>=0.1.3",
+    "pywebview>=5.0",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +37,12 @@ dev = ["pyinstaller"]
 
 [project.scripts]
 msr-gui = "msr_gui.main:run"
+
+[tool.setuptools.package-data]
+msr_gui = [
+    "assets/**/*",
+    "assets/*",
+]
 
 [project.urls]
 Homepage = "https://github.com/maplewan/MSR-v2"
