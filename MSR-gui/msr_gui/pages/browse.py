@@ -10,7 +10,7 @@ from msr_gui.services.repo_service import repo_service
 async def browse_page():
     """配置浏览页面。"""
     with create_layout('配置浏览'):
-        ui.label('配置浏览').classes('text-2xl font-bold text-slate-800 q-mb-md')
+        ui.label('配置浏览').classes('text-2xl font-bold text-stone-800 q-mb-md')
 
         try:
             configs_data = await repo_service.list_configs()
@@ -22,11 +22,11 @@ async def browse_page():
         delete_target = {'type': None, 'name': None, 'version': None}
 
         with ui.dialog() as dialog, ui.card().classes('msr-card'):
-            with ui.row().classes('items-center p-5 border-b border-slate-100 gap-2'):
-                ui.icon('warning', size='24px').classes('text-red-500')
-                ui.label('确认删除此版本?').classes('text-lg font-semibold text-slate-700')
+            with ui.row().classes('items-center p-5 border-b border-stone-100 gap-2'):
+                ui.icon('warning', size='24px').classes('text-[#C08B7E]')
+                ui.label('确认删除此版本?').classes('text-lg font-semibold text-stone-700')
             with ui.column().classes('p-5 gap-4'):
-                dialog_info = ui.label('').classes('text-sm text-slate-500')
+                dialog_info = ui.label('').classes('text-sm text-stone-500')
                 with ui.row().classes('gap-3 justify-end'):
                     ui.button('取消', on_click=dialog.close).props('flat')
 
@@ -60,8 +60,8 @@ async def browse_page():
         # ---- 主布局：左侧列表 + 右侧详情 ----
         with ui.row().classes('w-full gap-5').style('min-height: 60vh;'):
             # 左侧面板
-            with ui.card().style('width: 300px; min-width: 280px;').classes('msr-card bg-slate-50'):
-                with ui.tabs().classes('w-full text-slate-700') as tabs:
+            with ui.card().style('width: 300px; min-width: 280px;').classes('msr-card bg-stone-50'):
+                with ui.tabs().classes('w-full text-stone-700') as tabs:
                     tab_rules = ui.tab('Rules', icon='rule')
                     tab_skills = ui.tab('Skills', icon='build')
                     tab_mcp = ui.tab('MCP', icon='hub')
@@ -83,17 +83,17 @@ async def browse_page():
                     with detail_container:
                         if name is None:
                             with ui.column().classes('items-center justify-center w-full q-py-xl gap-3'):
-                                ui.icon('folder_open', size='48px').classes('text-slate-300')
-                                ui.label('请从左侧选择一个配置').classes('text-sm text-slate-400')
+                                ui.icon('folder_open', size='48px').classes('text-stone-300')
+                                ui.label('请从左侧选择一个配置').classes('text-sm text-stone-400')
                             return
 
                         if selected_version is None and versions:
                             selected_version = versions[-1]
 
                         # 标题行
-                        with ui.row().classes('items-center gap-3 p-5 border-b border-slate-100'):
-                            ui.label(name).classes('text-xl font-bold text-slate-800')
-                            ui.label(cfg_type.upper()).classes('text-xs uppercase tracking-wide text-slate-400 bg-slate-100 px-2 py-0.5 rounded')
+                        with ui.row().classes('items-center gap-3 p-5 border-b border-stone-100'):
+                            ui.label(name).classes('text-xl font-bold text-stone-800')
+                            ui.label(cfg_type.upper()).classes('text-xs uppercase tracking-wide text-stone-400 bg-stone-100 px-2 py-0.5 rounded')
 
                         with ui.column().classes('p-5 gap-4'):
                             # 版本芯片
@@ -116,21 +116,21 @@ async def browse_page():
                                         content_spinner.delete()
                                         if result.get('success'):
                                             with ui.column().classes('w-full msr-markdown-preview'):
-                                                ui.markdown(result.get('content', '')).classes('text-sm text-slate-700')
+                                                ui.markdown(result.get('content', '')).classes('text-sm text-stone-700')
                                         else:
-                                            ui.label(f'读取失败: {result.get("error")}').classes('text-red-600 text-sm')
+                                            ui.label(f'读取失败: {result.get("error")}').classes('text-[#C08B7E] text-sm')
                                     except Exception as e:
                                         content_spinner.delete()
-                                        ui.label(f'读取失败: {e}').classes('text-red-600 text-sm')
+                                        ui.label(f'读取失败: {e}').classes('text-[#C08B7E] text-sm')
                                 else:
                                     try:
                                         path = repo_service.repo.get_config_path(cfg_type, name, selected_version)
                                         with ui.column().classes('w-full msr-markdown-preview'):
                                             with ui.row().classes('items-center gap-2'):
-                                                ui.icon('folder').classes('text-blue-600')
-                                                ui.label(str(path)).classes('text-sm text-slate-700')
+                                                ui.icon('folder').classes('text-slate-600')
+                                                ui.label(str(path)).classes('text-sm text-stone-700')
                                     except Exception as e:
-                                        ui.label(f'获取路径失败: {e}').classes('text-red-600 text-sm')
+                                        ui.label(f'获取路径失败: {e}').classes('text-[#C08B7E] text-sm')
 
                             # 操作按钮
                             with ui.row().classes('gap-3'):
@@ -152,12 +152,12 @@ async def browse_page():
                     container.clear()
                     with container:
                         if not configs:
-                            ui.label('暂无配置').classes('text-slate-400 text-center text-sm q-py-md')
+                            ui.label('暂无配置').classes('text-stone-400 text-center text-sm q-py-md')
                             return
                         for name, versions in sorted(configs.items()):
                             with ui.button(
                                 on_click=lambda _=None, n=name, v=versions, t=cfg_type: show_detail(n, t, v)
-                            ).props('flat no-caps').classes('full-width text-slate-700 hover:bg-slate-100'):
+                            ).props('flat no-caps').classes('full-width text-stone-700 hover:bg-stone-100'):
                                 with ui.row().classes('items-center justify-between w-full'):
                                     ui.label(name).classes('text-sm font-medium')
                                     ui.badge(str(len(versions))).props('color=primary rounded')

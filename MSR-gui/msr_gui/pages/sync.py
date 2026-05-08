@@ -21,12 +21,12 @@ _ACTION_LABELS = {
 
 # 动作类型 -> 文本颜色类
 _ACTION_COLORS = {
-    'sync': 'text-emerald-600',
-    'overwrite': 'text-amber-600',
-    'conflict': 'text-red-600',
-    'skip_unsupported': 'text-slate-400',
-    'skip_no_config': 'text-slate-400',
-    'skip_no_servers': 'text-slate-400',
+    'sync': 'text-[#8FA89B]',
+    'overwrite': 'text-[#C4A882]',
+    'conflict': 'text-[#C08B7E]',
+    'skip_unsupported': 'text-stone-400',
+    'skip_no_config': 'text-stone-400',
+    'skip_no_servers': 'text-stone-400',
 }
 
 # 配置类型 -> 显示名称
@@ -64,15 +64,15 @@ async def sync_page():
         has_any_config = any(configs.get(t) for t in ('rules', 'skills', 'mcp'))
 
         # ==================== 页面标题 ====================
-        ui.label('同步面板').classes('text-2xl font-bold text-slate-800 q-mb-md')
+        ui.label('同步面板').classes('text-2xl font-bold text-stone-800 q-mb-md')
 
         # ==================== 空状态 ====================
         if not has_any_config:
             with ui.card().classes('w-full msr-card'):
                 with ui.column().classes('items-center p-8 gap-3'):
-                    ui.icon('folder_open', size='48px').classes('text-slate-300')
-                    ui.label('仓库暂无配置').classes('text-lg font-semibold text-slate-400')
-                    ui.label('请先在设置页面初始化仓库或导入配置').classes('text-sm text-slate-400')
+                    ui.icon('folder_open', size='48px').classes('text-stone-300')
+                    ui.label('仓库暂无配置').classes('text-lg font-semibold text-stone-400')
+                    ui.label('请先在设置页面初始化仓库或导入配置').classes('text-sm text-stone-400')
                     ui.button('去导入', icon='file_upload', on_click=lambda: ui.navigate.to('/import')).props('outline color=primary').classes('q-mt-sm')
             return
 
@@ -110,8 +110,8 @@ async def sync_page():
             # ---------- 左栏：配置选择 ----------
             with ui.card().style('width: 30%').classes('p-4 msr-card'):
                 with ui.row().classes('items-center gap-2 q-mb-sm'):
-                    ui.icon('list', size='22px').classes('text-blue-600')
-                    ui.label('配置选择').classes('text-sm font-semibold text-slate-700')
+                    ui.icon('list', size='22px').classes('text-slate-600')
+                    ui.label('配置选择').classes('text-sm font-semibold text-stone-700')
 
                 with ui.tabs() as config_tabs:
                     tab_all = ui.tab('全部')
@@ -127,7 +127,7 @@ async def sync_page():
                             if not items:
                                 continue
                             ui.label(_TYPE_LABELS.get(ctype, ctype)).classes(
-                                'text-sm font-semibold text-blue-600 q-mt-sm'
+                                'text-sm font-semibold text-slate-600 q-mt-sm'
                             )
                             for name, versions in items.items():
                                 _build_config_row(ctype, name, versions)
@@ -136,7 +136,7 @@ async def sync_page():
                     with ui.tab_panel(tab_rules):
                         items = configs.get('rules', {})
                         if not items:
-                            ui.label('暂无 Rules 配置').classes('text-slate-400 text-sm')
+                            ui.label('暂无 Rules 配置').classes('text-stone-400 text-sm')
                         else:
                             for name, versions in items.items():
                                 _build_config_row('rules', name, versions)
@@ -145,7 +145,7 @@ async def sync_page():
                     with ui.tab_panel(tab_skills):
                         items = configs.get('skills', {})
                         if not items:
-                            ui.label('暂无 Skills 配置').classes('text-slate-400 text-sm')
+                            ui.label('暂无 Skills 配置').classes('text-stone-400 text-sm')
                         else:
                             for name, versions in items.items():
                                 _build_config_row('skills', name, versions)
@@ -154,7 +154,7 @@ async def sync_page():
                     with ui.tab_panel(tab_mcp):
                         items = configs.get('mcp', {})
                         if not items:
-                            ui.label('暂无 MCP 配置').classes('text-slate-400 text-sm')
+                            ui.label('暂无 MCP 配置').classes('text-stone-400 text-sm')
                         else:
                             for name, versions in items.items():
                                 _build_config_row('mcp', name, versions)
@@ -162,8 +162,8 @@ async def sync_page():
             # ---------- 中栏：IDE 选择 ----------
             with ui.card().style('width: 35%').classes('p-4 msr-card'):
                 with ui.row().classes('items-center gap-2 q-mb-sm'):
-                    ui.icon('devices', size='22px').classes('text-blue-600')
-                    ui.label('目标 IDE').classes('text-sm font-semibold text-slate-700')
+                    ui.icon('devices', size='22px').classes('text-slate-600')
+                    ui.label('目标 IDE').classes('text-sm font-semibold text-stone-700')
 
                 with ui.row().classes('w-full gap-2 q-mb-sm'):
                     ui.button('全选', on_click=lambda: _select_all_ides()).props(
@@ -194,11 +194,11 @@ async def sync_page():
                                             'width: 32px; height: 32px; object-fit: contain;'
                                         )
                                     else:
-                                        ui.icon('computer', size='28px').classes('text-slate-400')
-                                    ui.label(name.capitalize()).classes('text-sm font-medium text-center text-slate-700')
+                                        ui.icon('computer', size='28px').classes('text-stone-400')
+                                    ui.label(name.capitalize()).classes('text-sm font-medium text-center text-stone-700')
                                     if not ide['supports_global_rules']:
                                         ui.label('无全局Rules').classes(
-                                            'text-xs text-slate-400 text-center'
+                                            'text-xs text-stone-400 text-center'
                                         )
 
                 def _toggle_ide(name: str):
@@ -222,11 +222,11 @@ async def sync_page():
             # ---------- 右栏：同步选项与执行 ----------
             with ui.card().style('width: 35%').classes('p-4 msr-card'):
                 with ui.row().classes('items-center gap-2 q-mb-sm'):
-                    ui.icon('tune', size='22px').classes('text-blue-600')
-                    ui.label('同步选项').classes('text-sm font-semibold text-slate-700')
+                    ui.icon('tune', size='22px').classes('text-slate-600')
+                    ui.label('同步选项').classes('text-sm font-semibold text-stone-700')
 
                 # Scope 选择
-                ui.label('Scope').classes('text-sm font-medium text-slate-600 q-mb-xs')
+                ui.label('Scope').classes('text-sm font-medium text-stone-600 q-mb-xs')
                 scope_radio = ui.radio(
                     {'global': 'Global', 'project': 'Project'},
                     value='global',
@@ -306,11 +306,11 @@ async def sync_page():
                     preview_area.clear()
                     with preview_area:
                         if not current_preview:
-                            ui.label('无操作需要执行').classes('text-slate-400 text-xs')
+                            ui.label('无操作需要执行').classes('text-stone-400 text-xs')
                             return
 
                         ui.label(f'预览结果：共 {len(current_preview)} 项').classes(
-                            'text-sm font-semibold text-slate-700 q-mb-xs'
+                            'text-sm font-semibold text-stone-700 q-mb-xs'
                         )
 
                         # 表头
@@ -330,12 +330,12 @@ async def sync_page():
                             color = _ACTION_COLORS.get(action, '')
 
                             with ui.row().classes('w-full text-xs items-center'):
-                                ui.label(item['ide']).style('width: 22%').classes('ellipsis text-slate-700')
+                                ui.label(item['ide']).style('width: 22%').classes('ellipsis text-stone-700')
                                 ui.label(
                                     _TYPE_LABELS.get(item['config_type'], item['config_type'])
-                                ).style('width: 18%').classes('text-slate-600')
-                                ui.label(item['name']).style('width: 25%').classes('ellipsis text-slate-700')
-                                ui.label(str(item['version'])).style('width: 15%').classes('text-slate-600')
+                                ).style('width: 18%').classes('text-stone-600')
+                                ui.label(item['name']).style('width: 25%').classes('ellipsis text-stone-700')
+                                ui.label(str(item['version'])).style('width: 15%').classes('text-stone-600')
                                 ui.label(label).style('width: 20%').classes(color + ' font-medium')
 
                 # ---------- 执行同步逻辑 ----------
@@ -431,12 +431,12 @@ async def sync_page():
                     cb_refs = {}
 
                     with ui.dialog() as dialog, ui.card().classes('w-full max-w-md msr-card'):
-                        with ui.row().classes('items-center p-5 border-b border-slate-100 gap-2'):
-                            ui.icon('warning', size='24px').classes('text-amber-500')
-                            ui.label('确认覆盖').classes('text-lg font-semibold text-slate-700')
+                        with ui.row().classes('items-center p-5 border-b border-stone-100 gap-2'):
+                            ui.icon('warning', size='24px').classes('text-[#C4A882]')
+                            ui.label('确认覆盖').classes('text-lg font-semibold text-stone-700')
                         with ui.column().classes('p-5 gap-3'):
                             ui.label('以下配置将覆盖或合并 IDE 中的现有配置：').classes(
-                                'text-sm text-slate-500'
+                                'text-sm text-stone-500'
                             )
 
                             for item in items:
@@ -466,8 +466,8 @@ async def sync_page():
 
         # ==================== 底部日志区 ====================
         with ui.card().classes('w-full mt-5 msr-card'):
-            with ui.row().classes('items-center p-5 bg-slate-800 gap-2'):
-                ui.icon('terminal', size='20px').classes('text-slate-300')
-                ui.label('操作日志').classes('text-sm font-semibold text-slate-100')
+            with ui.row().classes('items-center p-5 bg-stone-800 gap-2'):
+                ui.icon('terminal', size='20px').classes('text-stone-300')
+                ui.label('操作日志').classes('text-sm font-semibold text-stone-100')
             log_area = ui.log(max_lines=100).classes('w-full msr-terminal')
             log_area.style('height: 160px')

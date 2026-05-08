@@ -11,7 +11,7 @@ from msr_gui.utils import get_ide_icon_url
 async def settings_page():
     """设置页面。"""
     with create_layout('设置'):
-        ui.label('设置').classes('text-2xl font-bold text-slate-800 q-mb-md')
+        ui.label('设置').classes('text-2xl font-bold text-stone-800 q-mb-md')
 
         try:
             config = await repo_service.get_config()
@@ -23,19 +23,19 @@ async def settings_page():
 
         # ---- 全局配置区 ----
         with ui.card().classes('w-full q-mb-md msr-card'):
-            with ui.row().classes('items-center p-5 bg-slate-50 border-b border-slate-100 gap-2'):
-                ui.icon('settings', size='24px').classes('text-blue-600')
-                ui.label('全局配置').classes('text-lg font-semibold text-slate-700')
+            with ui.row().classes('items-center p-5 bg-stone-50 border-b border-stone-100 gap-2'):
+                ui.icon('settings', size='24px').classes('text-slate-600')
+                ui.label('全局配置').classes('text-lg font-semibold text-stone-700')
 
             with ui.column().classes('p-5 gap-4'):
                 # 仓库路径
                 with ui.column().classes('w-full gap-1'):
-                    ui.label('仓库路径').classes('text-sm font-medium text-slate-600')
+                    ui.label('仓库路径').classes('text-sm font-medium text-stone-600')
                     repo_path_input = ui.input(value=config.get('repo_path', '')).classes('w-full')
 
                 # 默认 IDE（动态从适配器注册表读取 + all 选项）
                 with ui.column().classes('w-full gap-2'):
-                    ui.label('默认 IDE').classes('text-sm font-medium text-slate-600')
+                    ui.label('默认 IDE').classes('text-sm font-medium text-stone-600')
                     current_ides = set(config.get('default_ides', ['all']))
                     ide_checkboxes = {}
                     with ui.row().classes('gap-4 wrap items-center'):
@@ -52,12 +52,12 @@ async def settings_page():
                                 )
                         # “all” 默认项：代表所有 IDE
                         with ui.row().classes('items-center gap-1'):
-                            ui.icon('select_all', size='18px').classes('text-slate-500')
+                            ui.icon('select_all', size='18px').classes('text-stone-500')
                             ide_checkboxes['all'] = ui.checkbox('All', value='all' in current_ides)
 
                 # 默认 Scope
                 with ui.column().classes('w-full gap-2'):
-                    ui.label('默认 Scope').classes('text-sm font-medium text-slate-600')
+                    ui.label('默认 Scope').classes('text-sm font-medium text-stone-600')
                     scope_radio = ui.radio(
                         {'global': 'Global', 'project': 'Project'},
                         value=config.get('default_scope', 'global'),
@@ -65,7 +65,7 @@ async def settings_page():
 
                 # 忽略模式
                 with ui.column().classes('w-full gap-2'):
-                    ui.label('忽略模式（每行一个）').classes('text-sm font-medium text-slate-600')
+                    ui.label('忽略模式（每行一个）').classes('text-sm font-medium text-stone-600')
                     ignore_text = '\n'.join(config.get('ignore_patterns', []))
                     ignore_input = ui.textarea(value=ignore_text).classes('w-full').props('rows=4')
 
@@ -88,13 +88,13 @@ async def settings_page():
 
         # ---- 仓库管理区 ----
         with ui.card().classes('w-full q-mb-md msr-card'):
-            with ui.row().classes('items-center p-5 bg-slate-50 border-b border-slate-100 gap-2'):
-                ui.icon('storage', size='24px').classes('text-blue-600')
-                ui.label('仓库管理').classes('text-lg font-semibold text-slate-700')
+            with ui.row().classes('items-center p-5 bg-stone-50 border-b border-stone-100 gap-2'):
+                ui.icon('storage', size='24px').classes('text-slate-600')
+                ui.label('仓库管理').classes('text-lg font-semibold text-stone-700')
 
             with ui.column().classes('p-5 gap-4'):
                 exists = status.get('exists', False)
-                status_color = 'text-emerald-600' if exists else 'text-red-600'
+                status_color = 'text-[#8FA89B]' if exists else 'text-[#C08B7E]'
                 status_text = '已初始化' if exists else '未初始化'
                 with ui.row().classes('items-center gap-2'):
                     ui.icon('circle').classes(status_color).style('font-size: 10px;')
@@ -125,12 +125,12 @@ async def settings_page():
 
         # ---- 主题设置 ----
         with ui.card().classes('w-full msr-card'):
-            with ui.row().classes('items-center p-5 bg-slate-50 border-b border-slate-100 gap-2'):
-                ui.icon('palette', size='24px').classes('text-blue-600')
-                ui.label('主题设置').classes('text-lg font-semibold text-slate-700')
+            with ui.row().classes('items-center p-5 bg-stone-50 border-b border-stone-100 gap-2'):
+                ui.icon('palette', size='24px').classes('text-slate-600')
+                ui.label('主题设置').classes('text-lg font-semibold text-stone-700')
 
             with ui.row().classes('items-center p-5 gap-3'):
-                ui.icon('dark_mode', size='20px').classes('text-slate-400')
-                ui.label('暗色模式').classes('text-sm font-medium text-slate-600')
+                ui.icon('dark_mode', size='20px').classes('text-stone-400')
+                ui.label('暗色模式').classes('text-sm font-medium text-stone-600')
                 ui.chip('即将支持', color='amber', text_color='white', icon='schedule').props('dense').classes('q-ml-sm')
                 ui.tooltip('当前 UI 为浅色主题设计，暗色模式将在后续版本支持').classes('text-xs')

@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MSR Sync Manager icon">
   <title>MSR Sync Manager</title>
   <defs>
-    <!-- 主背景：品牌蓝 → 紫（与 GUI primary/accent 色一致） -->
+    <!-- 主背景：莫兰迪灰蓝 → 灰紫（柔和优雅） -->
     <linearGradient id="msr-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"  stop-color="#2563EB"/>
-      <stop offset="55%" stop-color="#6366F1"/>
-      <stop offset="100%" stop-color="#7C3AED"/>
+      <stop offset="0%"  stop-color="#7B8FA2"/>
+      <stop offset="55%" stop-color="#8E8BA1"/>
+      <stop offset="100%" stop-color="#9E8EA1"/>
     </linearGradient>
     <!-- 顶部高光 -->
     <linearGradient id="msr-sheen" x1="0" y1="0" x2="0" y2="1">

@@ -196,7 +196,7 @@ async def import_page():
 
     # ==================== UI 构建 ====================
     with create_layout('导入配置'):
-        ui.label('导入配置向导').classes('text-2xl font-bold text-slate-800 q-mb-md')
+        ui.label('导入配置向导').classes('text-2xl font-bold text-stone-800 q-mb-md')
 
         with ui.stepper().props('vertical').classes('w-full') as stepper:
             ui_refs['stepper'] = stepper
@@ -267,17 +267,18 @@ async def import_page():
                     with ui.tab_panel('upload'):
                         async def on_upload(e):
                             """处理文件上传。"""
-                            if not e.content:
+                            if not e.file:
                                 return
                             # 保存到临时文件
-                            suffix = Path(e.name).suffix if e.name else ''
+                            suffix = Path(e.file.name).suffix if e.file.name else ''
+                            content = await e.file.read()
                             with tempfile.NamedTemporaryFile(
                                 delete=False, suffix=suffix
                             ) as tmp:
-                                tmp.write(e.content.read())
+                                tmp.write(content)
                                 state.uploaded_file_path = tmp.name
-                            ui.notify(f'已上传: {e.name}', type='positive')
-                            ui_refs['upload_label'].text = f'已选择: {e.name}'
+                            ui.notify(f'已上传: {e.file.name}', type='positive')
+                            ui_refs['upload_label'].text = f'已选择: {e.file.name}'
 
                         ui_refs['upload_component'] = ui.upload(
                             label='上传 .md / .zip / .tar.gz 文件',
@@ -343,10 +344,10 @@ async def import_page():
                                         value=checked,
                                         on_change=lambda e, n=name: on_item_toggle(n, e.value),
                                     )
-                                ui.label(name).classes('col-5 text-sm text-slate-700')
-                                ui.label(source_type).classes('col-3 text-sm text-slate-600')
+                                ui.label(name).classes('col-5 text-sm text-stone-700')
+                                ui.label(source_type).classes('col-3 text-sm text-stone-600')
                                 with ui.column().classes('col-3'):
-                                    ui.label(path).classes('text-xs text-slate-400 ellipsis')
+                                    ui.label(path).classes('text-xs text-stone-400 ellipsis')
 
                     table_rows()
 
@@ -397,16 +398,16 @@ async def import_page():
                 import_progress()
 
                 # 实时日志区域
-                ui.label('导入日志:').classes('text-subtitle2 text-slate-600 q-mt-md q-mb-sm')
-                with ui.card().classes('w-full').style('background: #0f172a !important; max-height: 300px; overflow-y: auto;'):
-                    with ui.row().classes('items-center q-pa-sm border-b border-slate-700'):
-                        ui.icon('terminal', size='18px').classes('text-slate-400')
-                        ui.label('终端输出').classes('text-xs text-slate-400 q-ml-sm uppercase tracking-wide')
+                ui.label('导入日志:').classes('text-subtitle2 text-stone-600 q-mt-md q-mb-sm')
+                with ui.card().classes('w-full').style('background: #4A555E !important; max-height: 300px; overflow-y: auto;'):
+                    with ui.row().classes('items-center q-pa-sm border-b border-stone-700'):
+                        ui.icon('terminal', size='18px').classes('text-stone-400')
+                        ui.label('终端输出').classes('text-xs text-stone-400 q-ml-sm uppercase tracking-wide')
                     @ui.refreshable
                     def import_logs():
                         """导入日志列表。"""
                         if not state.import_results:
-                            ui.label('暂无日志').classes('text-slate-500 text-xs q-pa-sm')
+                            ui.label('暂无日志').classes('text-stone-500 text-xs q-pa-sm')
                             return
 
                         for r in state.import_results:
@@ -415,11 +416,11 @@ async def import_page():
                             if status == 'success':
                                 version = r.get('version', '-')
                                 msg = f'[成功] {name}  →  {version}'
-                                color_class = 'text-emerald-400'
+                                color_class = 'text-[#8FA89B]'
                             else:
                                 reason = r.get('reason', '未知错误')
                                 msg = f'[失败] {name}  →  {reason}'
-                                color_class = 'text-red-400'
+                                color_class = 'text-[#C08B7E]'
 
                             ui.label(msg).classes(f'{color_class} text-xs q-pa-xs font-mono')
 
