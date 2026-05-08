@@ -7,7 +7,7 @@ import urllib.request
 import zipfile
 from enum import Enum
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from msr_sync.constants import SKILL_MARKER_FILE
 from msr_sync.core.exceptions import InvalidSourceError, NetworkError
@@ -177,13 +177,14 @@ class SourceResolver:
         return [ResolvedItem(name=name, path=path, source_type=SourceType.FILE)]
 
     def _resolve_directory(
-        self, path: Path, config_type: str
+        self, path: Path, config_type: str, fallback_name: Optional[str] = None
     ) -> List[ResolvedItem]:
         """解析目录，根据 config_type 检测配置项。
 
         Args:
             path: 目录路径
             config_type: 配置类型（rules/skills/mcp）
+            fallback_name: 备用名称，当目录名不可读（如临时目录）时使用
 
         Returns:
             配置项列表
@@ -197,9 +198,9 @@ class SourceResolver:
         if config_type == "rules":
             return self._resolve_rules_directory(path)
         elif config_type == "skills":
-            return self._resolve_skills_directory(path)
+            return self._resolve_skills_directory(path, fallback_name=fallback_name)
         elif config_type == "mcp":
-            return self._resolve_mcp_directory(path)
+            return self._resolve_mcp_directory(path, fallback_name=fallback_name)
         else:
             raise InvalidSourceError(f"不支持的配置类型: {config_type}")
 
@@ -219,16 +220,23 @@ class SourceResolver:
                 )
         return items
 
-    def _resolve_skills_directory(self, path: Path) -> List[ResolvedItem]:
+    def _resolve_skills_directory(
+        self, path: Path, fallback_name: Optional[str] = None
+    ) -> List[ResolvedItem]:
         """解析 skills 目录。
 
         如果根目录含 SKILL.md，视为单个 skill（名称=目录名）；
         否则每个子目录视为一个独立的 skill。
+
+        Args:
+            path: 目录路径
+            fallback_name: 备用名称，当目录名不可读（如临时目录）时使用
         """
         if self._is_single_skill(path):
+            name = fallback_name if fallback_name else path.name
             return [
                 ResolvedItem(
-                    name=path.name,
+                    name=name,
                     path=path,
                     source_type=SourceType.DIRECTORY,
                 )
@@ -249,16 +257,23 @@ class SourceResolver:
                 )
         return items
 
-    def _resolve_mcp_directory(self, path: Path) -> List[ResolvedItem]:
+    def _resolve_mcp_directory(
+        self, path: Path, fallback_name: Optional[str] = None
+    ) -> List[ResolvedItem]:
         """解析 MCP 目录。
 
         如果根目录含非子目录文件，视为单个 MCP（名称=目录名）；
         否则每个子目录视为一个独立的 MCP。
+
+        Args:
+            path: 目录路径
+            fallback_name: 备用名称，当目录名不可读（如临时目录）时使用
         """
         if self._is_single_mcp(path):
+            name = fallback_name if fallback_name else path.name
             return [
                 ResolvedItem(
-                    name=path.name,
+                    name=name,
                     path=path,
                     source_type=SourceType.DIRECTORY,
                 )
@@ -319,10 +334,12 @@ class SourceResolver:
         if len(top_entries) == 1 and top_entries[0].is_dir():
             # 单个顶层目录，进入该目录解析
             actual_dir = top_entries[0]
+            return self._resolve_directory(actual_dir, config_type)
         else:
+            # 没有单一顶层目录，使用压缩包文件名作为 fallback 名称
             actual_dir = extract_dir
-
-        return self._resolve_directory(actual_dir, config_type)
+            fallback_name = self._get_archive_stem(path)
+            return self._resolve_directory(actual_dir, config_type, fallback_name=fallback_name)
 
     def _resolve_url(
         self, url: str, config_type: str
@@ -359,6 +376,24 @@ class SourceResolver:
             raise NetworkError(f"下载失败: {url}，请检查网络连接") from e
 
         return self._resolve_archive(download_path, config_type)
+
+    @staticmethod
+    def _get_archive_stem(path: Path) -> str:
+        """获取压缩包的 stem 名称（去掉扩展名）。
+
+        处理 .tar.gz 等双重后缀的情况。
+        例如：my-skill.zip → my-skill, my-skill.tar.gz → my-skill
+        """
+        name = path.name
+        lower_name = name.lower()
+        if lower_name.endswith(".tar.gz"):
+            return name[: -len(".tar.gz")]
+        elif lower_name.endswith(".tgz"):
+            return name[: -len(".tgz")]
+        elif lower_name.endswith(".zip"):
+            return name[: -len(".zip")]
+        else:
+            return path.stem
 
     @staticmethod
     def _extract_filename_from_url(url: str) -> str:
