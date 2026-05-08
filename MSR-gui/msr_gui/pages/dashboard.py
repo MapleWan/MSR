@@ -22,7 +22,7 @@ async def dashboard_page():
             return
 
         exists = status.get('exists', False)
-        status_color = 'text-[#8FA89B]' if exists else 'text-[#C4A882]'
+        status_color = 'text-[#5E8A76]' if exists else 'text-[#9E7E55]'
         status_icon = 'check_circle' if exists else 'error'
         status_text = '已初始化' if exists else '未初始化'
 
@@ -54,7 +54,7 @@ async def dashboard_page():
             with ui.card().classes('col msr-card'):
                 with ui.column().classes('p-5 gap-3'):
                     ui.label('Skills').classes('text-xs uppercase tracking-wide text-stone-400')
-                    ui.label(str(skills_count)).classes('text-3xl font-bold text-[#8FA89B]')
+                    ui.label(str(skills_count)).classes('text-3xl font-bold text-[#5E8A76]')
                     ui.icon('build').classes('text-[#8FA89B]').style('font-size: 20px;')
 
             with ui.card().classes('col msr-card'):

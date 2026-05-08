@@ -17,20 +17,20 @@ def create_layout(title: str):
     """
     # 设置 Quasar 主题色（必须在 @ui.page 函数内部调用，NiceGUI 3.x 要求）
     ui.colors(
-        primary='#7B8FA2',
-        secondary='#8FA89B',
-        accent='#9E8EA1',
-        positive='#8FA89B',
-        negative='#C08B7E',
-        warning='#C4A882',
-        info='#8E9EAC',
+        primary='#5B7185',
+        secondary='#5E8A76',
+        accent='#7D6B80',
+        positive='#5E8A76',
+        negative='#A06B5E',
+        warning='#9E7E55',
+        info='#5B7185',
     )
 
     # 注入全局样式（NiceGUI 3.x 多页面模式下必须在 @ui.page 函数内部调用）
     ui.add_head_html('''
     <style>
       /* 页面背景 */
-      body { background-color: #F0EDEA !important; }
+      body { background-color: #F0EDEA !important; color: #3D3835; }
       .q-page { background-color: #F0EDEA !important; }
 
       /* 侧边栏 */
@@ -41,8 +41,12 @@ def create_layout(title: str):
         background: white;
         border: 1px solid #DDD8D3;
         border-radius: 0.75rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        transition: box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+        box-shadow: 0 1px 3px rgba(61, 56, 53, 0.06);
+        transition: all 0.2s ease-out;
+      }
+      .msr-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(90, 104, 114, 0.08);
       }
       .msr-card-hover:hover {
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
@@ -51,7 +55,7 @@ def create_layout(title: str):
 
       /* 侧边栏导航按钮 */
       .msr-nav-btn {
-        color: #A0A8AE !important;
+        color: #D5D9DC !important;
         border-radius: 0.5rem !important;
         transition: all 0.15s ease-out !important;
         border-left: 3px solid transparent !important;
@@ -65,7 +69,7 @@ def create_layout(title: str):
       }
       .msr-nav-btn-active {
         background: rgba(123, 143, 162, 0.2) !important;
-        color: #7B8FA2 !important;
+        color: #E8E4E0 !important;
         border-left-color: #7B8FA2 !important;
       }
 
@@ -92,12 +96,13 @@ def create_layout(title: str):
         border-radius: 0.75rem;
         padding: 0.75rem 1rem;
         cursor: pointer;
-        transition: all 0.15s ease-out;
+        transition: all 0.2s ease-out;
         background: white;
       }
       .msr-ide-card:hover {
         border-color: #B5AEA8;
         box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        transform: translateY(-1px);
       }
       .msr-ide-card-selected {
         background: #F0EDEA;
@@ -121,7 +126,7 @@ def create_layout(title: str):
       /* 版本 chip（应用于 Quasar button，需强选择器权重覆盖默认样式） */
       .q-btn.msr-chip {
         background: #E2DDD9 !important;
-        color: #5A6872 !important;
+        color: #3D3835 !important;
         border-radius: 9999px !important;
         padding: 0.125rem 0.625rem !important;
         font-size: 0.75rem !important;
@@ -149,7 +154,7 @@ def create_layout(title: str):
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #7A7570;
+        color: #5A5550;
         font-weight: 600;
       }
 

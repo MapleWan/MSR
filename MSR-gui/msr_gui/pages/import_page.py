@@ -344,7 +344,7 @@ async def import_page():
                                         on_change=lambda e, n=name: on_item_toggle(n, e.value),
                                     )
                                 ui.label(name).classes('col-5 text-sm text-stone-700')
-                                ui.label(source_type).classes('col-3 text-sm text-stone-600')
+                                ui.label(source_type).classes('col-3 text-sm text-stone-700')
                                 with ui.column().classes('col-3'):
                                     ui.label(path).classes('text-xs text-stone-400 ellipsis')
 
@@ -415,11 +415,11 @@ async def import_page():
                             if status == 'success':
                                 version = r.get('version', '-')
                                 msg = f'[成功] {name}  →  {version}'
-                                color_class = 'text-[#8FA89B]'
+                                color_class = 'text-[#5E8A76]'
                             else:
                                 reason = r.get('reason', '未知错误')
                                 msg = f'[失败] {name}  →  {reason}'
-                                color_class = 'text-[#C08B7E]'
+                                color_class = 'text-[#A06B5E]'
 
                             ui.label(msg).classes(f'{color_class} text-xs q-pa-xs font-mono')
 

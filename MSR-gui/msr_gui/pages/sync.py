@@ -21,9 +21,9 @@ _ACTION_LABELS = {
 
 # 动作类型 -> 文本颜色类
 _ACTION_COLORS = {
-    'sync': 'text-[#8FA89B]',
-    'overwrite': 'text-[#C4A882]',
-    'conflict': 'text-[#C08B7E]',
+    'sync': 'text-[#5E8A76]',
+    'overwrite': 'text-[#9E7E55]',
+    'conflict': 'text-[#A06B5E]',
     'skip_unsupported': 'text-stone-400',
     'skip_no_config': 'text-stone-400',
     'skip_no_servers': 'text-stone-400',
@@ -333,9 +333,9 @@ async def sync_page():
                                 ui.label(item['ide']).style('width: 22%').classes('ellipsis text-stone-700')
                                 ui.label(
                                     _TYPE_LABELS.get(item['config_type'], item['config_type'])
-                                ).style('width: 18%').classes('text-stone-600')
+                                ).style('width: 18%').classes('text-stone-700')
                                 ui.label(item['name']).style('width: 25%').classes('ellipsis text-stone-700')
-                                ui.label(str(item['version'])).style('width: 15%').classes('text-stone-600')
+                                ui.label(str(item['version'])).style('width: 15%').classes('text-stone-700')
                                 ui.label(label).style('width: 20%').classes(color + ' font-medium')
 
                 # ---------- 执行同步逻辑 ----------

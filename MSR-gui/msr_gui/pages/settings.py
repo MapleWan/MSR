@@ -94,7 +94,7 @@ async def settings_page():
 
             with ui.column().classes('p-5 gap-4'):
                 exists = status.get('exists', False)
-                status_color = 'text-[#8FA89B]' if exists else 'text-[#C08B7E]'
+                status_color = 'text-[#5E8A76]' if exists else 'text-[#A06B5E]'
                 status_text = '已初始化' if exists else '未初始化'
                 with ui.row().classes('items-center gap-2'):
                     ui.icon('circle').classes(status_color).style('font-size: 10px;')

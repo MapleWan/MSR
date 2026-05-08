@@ -118,10 +118,10 @@ async def browse_page():
                                             with ui.column().classes('w-full msr-markdown-preview'):
                                                 ui.markdown(result.get('content', '')).classes('text-sm text-stone-700')
                                         else:
-                                            ui.label(f'读取失败: {result.get("error")}').classes('text-[#C08B7E] text-sm')
+                                            ui.label(f'读取失败: {result.get("error")}').classes('text-[#A06B5E] text-sm')
                                     except Exception as e:
                                         content_spinner.delete()
-                                        ui.label(f'读取失败: {e}').classes('text-[#C08B7E] text-sm')
+                                        ui.label(f'读取失败: {e}').classes('text-[#A06B5E] text-sm')
                                 else:
                                     try:
                                         path = repo_service.repo.get_config_path(cfg_type, name, selected_version)
@@ -130,7 +130,7 @@ async def browse_page():
                                                 ui.icon('folder').classes('text-slate-600')
                                                 ui.label(str(path)).classes('text-sm text-stone-700')
                                     except Exception as e:
-                                        ui.label(f'获取路径失败: {e}').classes('text-[#C08B7E] text-sm')
+                                        ui.label(f'获取路径失败: {e}').classes('text-[#A06B5E] text-sm')
 
                             # 操作按钮
                             with ui.row().classes('gap-3'):
