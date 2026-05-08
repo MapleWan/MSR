@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MSR favicon">
+  <defs>
+    <linearGradient id="fv-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0"  stop-color="#2563EB"/>
+      <stop offset="1"  stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <!-- 圆角方形背景 -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#fv-bg)"/>
+  <!-- 同步循环箭头（粗线条，小尺寸下易识别） -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round">
+    <path d="M 136 240 A 120 120 0 0 1 340 176"/>
+    <path d="M 376 272 A 120 120 0 0 1 172 336"/>
+  </g>
+  <g fill="#FFFFFF">
+    <path d="M 360 144 L 392 240 L 296 220 Z"/>
+    <path d="M 152 368 L 120 272 L 216 292 Z"/>
+  </g>
+</svg>

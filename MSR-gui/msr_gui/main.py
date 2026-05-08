@@ -1,8 +1,28 @@
 """MSR Sync Manager GUI 应用入口。"""
 
 import argparse
+import sys
+from pathlib import Path
 
-from nicegui import ui
+from nicegui import app, ui
+
+
+def _try_set_macos_dock_icon(png_path: Path) -> None:
+    """macOS 下将 Dock 图标替换为指定 PNG。
+
+    pywebview 的 ``icon`` 参数在 macOS 上不会更改 Dock 图标，
+    需借助 AppKit 主动设置。任何异常都静默忽略，
+    避免影响启动流程。
+    """
+    if sys.platform != 'darwin':
+        return
+    try:
+        from AppKit import NSApplication, NSImage  # type: ignore
+        NSApplication.sharedApplication().setApplicationIconImage_(
+            NSImage.alloc().initWithContentsOfFile_(str(png_path))
+        )
+    except Exception:
+        pass
 
 
 def run():
@@ -29,11 +49,23 @@ def run():
     from msr_gui.pages import dashboard, browse, import_page, sync, settings
 
     # 注册静态资源目录（IDE 图标等）
-    from msr_gui.utils import register_static_assets
+    from msr_gui.utils import register_static_assets, ASSETS_DIR
     register_static_assets()
+
+    # 图标：
+    #   - 浏览器标签页 favicon 用 SVG（矢量、清晰）
+    #   - 原生窗口（pywebview）仅支持 PNG/ICO，用 app-icon.png
+    favicon_svg = ASSETS_DIR / 'favicon.svg'
+    app_icon_png = ASSETS_DIR / 'app-icon.png'
+
+    if not args.browser and app_icon_png.exists():
+        # native 模式：pywebview 窗口图标（任务栏 / Dock / 标题栏）
+        app.native.window_args['icon'] = str(app_icon_png)
+        _try_set_macos_dock_icon(app_icon_png)
 
     ui.run(
         title='MSR Sync Manager',
+        favicon=str(favicon_svg) if favicon_svg.exists() else None,
         port=args.port,
         native=not args.browser,
         reload=False,

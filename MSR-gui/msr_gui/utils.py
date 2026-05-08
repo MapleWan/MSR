@@ -8,6 +8,7 @@ from nicegui import app
 
 # 资源根目录
 _ASSETS_ROOT = Path(__file__).parent / 'assets'
+ASSETS_DIR = _ASSETS_ROOT  # 对外暴露（供 main.py 定位 favicon 等）
 ICONS_DIR = _ASSETS_ROOT / 'icons'
 
 # 按优先级尝试的扩展名：矢量最佳，其次 PNG
