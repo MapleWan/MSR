@@ -269,15 +269,14 @@ async def import_page():
                             """处理文件上传。"""
                             if not e.file:
                                 return
-                            # 保存到临时文件
-                            suffix = Path(e.file.name).suffix if e.file.name else ''
+                            # 使用临时目录 + 原始文件名保存，保留文件名信息
+                            original_name = e.file.name or 'upload'
                             content = await e.file.read()
-                            with tempfile.NamedTemporaryFile(
-                                delete=False, suffix=suffix
-                            ) as tmp:
-                                tmp.write(content)
-                                state.uploaded_file_path = tmp.name
-                            ui.notify(f'已上传: {e.file.name}', type='positive')
+                            tmp_dir = tempfile.mkdtemp()
+                            tmp_path = Path(tmp_dir) / original_name
+                            tmp_path.write_bytes(content)
+                            state.uploaded_file_path = str(tmp_path)
+                            ui.notify(f'已上传: {original_name}', type='positive')
                             ui_refs['upload_label'].text = f'已选择: {e.file.name}'
 
                         ui_refs['upload_component'] = ui.upload(
